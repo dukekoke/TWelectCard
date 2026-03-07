@@ -78,7 +78,7 @@
     <div style="display:flex; gap:8px;">
       <button class="btn ghost" id="btnSound">🔈 音效：開</button>
       <button class="btn ghost" id="btnAnim">🎞️ 動畫：開</button>
-      <button class="btn ghost" id="btnToggleAi">🤖 AI 手牌</button>
+      <button class="btn ghost" id="btnToggleAi">🤖 AI 同路人手牌</button>
     </div>
   </header>
 
@@ -393,7 +393,7 @@
         } else { 
           const winnerText = state.human.total >= state.ai.total ? "恭喜凍蒜！" : "很遺憾 AI 同路人贏得這次大選!";
           setTimeout(() => {
-            alert(`遊戲結束！${winnerText}\n您的總分數：${state.human.total}\nAI 同路人總分數：${state.ai.total}`); 
+            alert(`遊戲結束！${winnerText}\n您的總分：${state.human.total}\nAI 同路人總分：${state.ai.total}`); 
             initGame(); 
           }, 3000);
         }
