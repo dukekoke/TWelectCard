@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>台灣大選年《開票牌》— 完整功能版</title>
+  <style>
+    :root{
+      --bg:#0b0f14; --panel:#121820; --muted:#7e8a9a; --text:#e6edf3;
+      --accent:#4cc2ff; --good:#2ecc71; --warn:#f39c12; --bad:#e74c3c;
+      --s-north:#2e86de; --s-center:#27ae60; --s-south:#e74c3c; --s-east:#8e44ad;
+    }
+    *{ box-sizing: border-box; }
+    body{
+      margin:0; background:linear-gradient(180deg,#0b0f14 0%, #0b0f14 40%, #0e141b 100%);
+      color:var(--text); font:16px/1.5 system-ui, sans-serif; padding-bottom:100px;
+    }
+    header{
+      padding:15px clamp(16px,4vw,32px); border-bottom:1px solid #1e2834;
+      background:rgba(18,24,32,0.8); backdrop-filter: blur(6px);
+      position:sticky; top:0; z-index:10; display:flex; align-items:center; justify-content:space-between;
+    }
+    .container{ max-width:1100px; margin:20px auto; padding:0 clamp(16px,4vw,32px); }
+    .panel{ background:var(--panel); border:1px solid #1e2834; border-radius:12px; padding:18px; margin-bottom:16px; }
+    .panel h2{ font-size:18px; margin:0 0 12px; color:#c9d4e3; }
+    
+    .cards{ display:flex; flex-wrap:wrap; gap:10px; }
+    .card{
+      cursor:pointer; background:#0f141b; border:1px solid #1e2834; border-radius:10px; padding:10px 12px;
+      display:flex; flex-direction:column; gap:6px; min-width:92px; transition: all .12s ease;
+    }
+    .card.sel{
+      outline:2px solid var(--accent); background: #0f1823;
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes pulse{
+      0%, 100% { box-shadow: 0 0 0 6px rgba(76,194,255,.1); }
+      50% { box-shadow: 0 0 0 10px rgba(76,194,255,.2); }
+    }
+    .card.play-anim{ animation: flyout .32s ease forwards; }
+    @keyframes flyout{
+      0%{ transform: translateY(0); opacity:1; }
+      100%{ transform: translateY(-30px); opacity:0; }
+    }
+
+    .tag{ font-size:12px; color:#dfe9f6; padding:2px 8px; border-radius:999px; width:max-content; border:1px solid rgba(255,255,255,0.12); }
+    .s-north{ background:var(--s-north); } .s-center{ background:var(--s-center); } .s-south{ background:var(--s-south); } .s-east{ background:var(--s-east); }
+    .rank{ font-size:20px; font-weight:700; }
+
+    .scores{ display:grid; gap:10px; grid-template-columns: repeat(3, 1fr); }
+    .scorebox{ background:#0f141b; border:1px solid #1c2430; border-radius:10px; padding:10px; }
+    .big{ font-size:22px; font-weight:800; }
+    .pill{ display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; border:1px solid #2b3a4d; margin-right:4px; }
+
+    .btn{ appearance:none; border:1px solid #2b3a4d; background:#0f141b; color:#e9f1fb; padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:600; }
+    .btn.primary{ background:linear-gradient(90deg,#0ea5e9,#22d3ee); border:0; color:#06233a; }
+    .btn.ghost{ background:transparent; }
+
+    /* 彈窗樣式 */
+    .modal{ position:fixed; inset:0; background:rgba(0,0,0,0.85); display:none; align-items:center; justify-content:center; z-index:100; padding:20px; }
+    .modal.active{ display:flex; }
+    .modal-content{ background:var(--panel); border:1px solid #1e2834; border-radius:16px; width:100%; max-width:650px; max-height:85vh; overflow-y:auto; padding:24px; line-height: 1.6; }
+
+    .footer-bar{ position:fixed; bottom:0; left:0; right:0; background:rgba(10,14,18,0.95); border-top:1px solid #1e2834; padding:15px; z-index:20; }
+    .hidden { display: none !important; }
+    @media (max-width: 720px){ .scores { grid-template-columns: 1fr; } }
+    
+    /* 規則說明清單 */
+    .rule-list { padding-left: 20px; margin: 10px 0; }
+    .rule-list li { margin-bottom: 8px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #2b3a4d; padding: 8px; text-align: left; }
+    th { background: #1c2430; }
+  </style>
+</head>
+<body>
+  <header>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <h1 style="margin:0; font-size:20px;">台灣大選年《開票牌》</h1>
+      <button class="btn ghost" id="btnHowToPlay" style="font-size:13px; padding:6px 12px;">💡 玩法說明</button>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn ghost" id="btnSound">🔈 音效：開</button>
+      <button class="btn ghost" id="btnAnim">🎞️ 動畫：開</button>
+      <button class="btn ghost" id="btnToggleAi">🤖 AI 手牌</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <section class="panel hidden" id="aiSection">
+      <h2>🤖 AI 手牌</h2>
+      <div class="cards" id="aiHandDisplay"></div>
+    </section>
+
+    <section class="panel">
+      <h2>你的手牌 (1-5 張)</h2>
+      <div class="cards" id="hand"></div>
+      <div style="margin-top:15px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <button class="btn" id="btnSuggest">採用最佳建議</button>
+        <button class="btn primary" id="btnPlay" disabled>出牌</button>
+        <button class="btn ghost" id="btnHistory">查看出牌紀錄</button>
+        <span id="selHint" style="font-size:14px; color:var(--muted)">尚未選牌</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>本輪預估</h2>
+      <div class="scores">
+        <div class="scorebox"><div>牌型分數</div><div class="big" id="estPattern">—</div><div id="estPatternName" style="font-size:13px;">—</div></div>
+        <div class="scorebox"><div>站台分數</div><div class="big" id="estStation">—</div><div id="estStationPills"></div></div>
+        <div class="scorebox"><div>預估總分</div><div class="big" id="estTotal">—</div></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>本輪結果</h2>
+      <div id="roundResult">等待雙方出牌...</div>
+    </section>
+  </div>
+
+  <div class="footer-bar">
+    <div style="display:flex; justify-content:space-around; max-width:1100px; margin:0 auto; font-weight:800;">
+      <div>🧑 人類：<span id="humanTotal">0</span></div>
+      <div>🤖 AI：<span id="aiTotal">0</span></div>
+      <div style="color:var(--muted)">第 <span id="roundNo">1</span> / 7 輪</div>
+    </div>
+  </div>
+
+  <div class="modal" id="modalHowToPlay">
+    <div class="modal-content">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <h2 style="margin:0; color:var(--accent);">🗳️ 玩法說明</h2>
+        <button class="btn ghost" onclick="toggleHowTo(false)">關閉</button>
+      </div>
+      <p>這是一款結合台灣大選主題與撲克牌策略的對戰遊戲，您將與 AI 進行 7 輪開票對決。</p>
+      
+      <h3 style="color:#c9d4e3; margin-top:20px;">基本流程：</h3>
+      <ul class="rule-list">
+        <li>每輪從 7 張手牌中選擇 <b>1 至 5 張</b> 作為本輪的「開票牌」。</li>
+        <li>確認出牌後，系統會補足手牌至 7 張，直到 7 輪結束。</li>
+        <li>計分公式：<b>本輪總分 = 牌型分數 × 站台分數</b></li>
+      </ul>
+
+      <h3 style="color:#c9d4e3; margin-top:20px;">牌型分數表：</h3>
+      <table>
+        <thead><tr><th>牌型</th><th>分數</th><th>說明</th></tr></thead>
+        <tbody>
+          <tr><td>同花順</td><td>100</td><td>5 張同區域且連號</td></tr>
+          <tr><td>四條</td><td>60</td><td>4 張相同號碼 (鐵支)</td></tr>
+          <tr><td>葫蘆</td><td>40</td><td>3 + 2 組合</td></tr>
+          <tr><td>同花 / 順子</td><td>35 / 30</td><td>5 張同區域 / 5 張連號</td></tr>
+          <tr><td>三條</td><td>30</td><td>3 張相同號碼 (重要更新)</td></tr>
+          <tr><td>兩對 / 一對</td><td>20 / 10</td><td>2 + 2 組合 / 2 張相同號碼</td></tr>
+          <tr><td>無牌型</td><td>5</td><td>不具備以上條件</td></tr>
+        </tbody>
+      </table>
+
+      <h3 style="color:#c9d4e3; margin-top:20px;">站台分數計算：</h3>
+      <p>站台分數基於 J、Q、K 的張數：</p>
+      <ul class="rule-list">
+        <li>公式：<b>(K 張數 × 3) + (Q 張數 × 2) - (J 張數 × 1) + 2</b></li>
+        <li>這代表 K 與 Q 是強力助選員，而 J 則可能造成負面影響。</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="modal" id="modalHistory">
+    <div class="modal-content">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h2 style="margin:0;">📜 出牌歷史紀錄</h2>
+        <button class="btn ghost" onclick="toggleModal(false)">關閉</button>
+      </div>
+      <div id="historyContent">尚無紀錄</div>
+    </div>
+  </div>
+
+  <script>
+    // ======= 音效與動畫設定 =======
+    const Sound = (() => {
+      let ctx = null, enabled = true;
+      function ensure(){ if(!enabled) return; if(!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)(); if(ctx.state === 'suspended') ctx.resume(); }
+      function playTone(freq, type, dur, vol, when=0){
+        ensure(); if(!ctx) return;
+        const osc = ctx.createOscillator(); const g = ctx.createGain();
+        osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime + when);
+        g.gain.setValueAtTime(vol, ctx.currentTime + when);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + when + dur);
+        osc.connect(g); g.connect(ctx.destination);
+        osc.start(ctx.currentTime + when); osc.stop(ctx.currentTime + when + dur);
+      }
+      return {
+        enable: (v) => enabled = v,
+        click: () => playTone(600, 'sine', 0.1, 0.2),
+        play: () => playTone(400, 'triangle', 0.2, 0.3),
+        score: () => { playTone(523, 'sine', 0.1, 0.2); playTone(659, 'sine', 0.1, 0.2, 0.1); }
+      };
+    })();
+
+    const SUITS = ["北部","中部","南部","東部"];
+    const RANKS = ["1","2","3","4","5","6","7","8","9","10","J","Q","K"];
+    const RANK_VAL = (r) => (r === "J" ? 11 : r === "Q" ? 12 : r === "K" ? 13 : parseInt(r));
+    
+    let state = {
+      round: 1, human: { hand:[], draw:[], total:0, log:[] }, ai: { hand:[], draw:[], total:0, log:[] },
+      settings: { sound: true, anim: true }, locked: false
+    };
+
+    function makeDeck() {
+      let d = [];
+      SUITS.forEach(s => RANKS.forEach(r => d.push({suit:s, rank:r, val:RANK_VAL(r), id: Math.random()})));
+      return d.sort(() => Math.random() - 0.5);
+    }
+
+    function patternScore(cards) {
+      const n = cards.length;
+      const rankCnt = {}; cards.forEach(c => rankCnt[c.rank] = (rankCnt[c.rank]||0)+1);
+      const suitCnt = {}; cards.forEach(c => suitCnt[c.suit] = (suitCnt[c.suit]||0)+1);
+      const vals = Object.values(rankCnt);
+      
+      if (n === 5) {
+        const sorted = cards.map(c=>c.val).sort((a,b)=>a-b);
+        const isStraight = sorted.every((v,i,a) => i===0 || v === a[i-1]+1);
+        const isFlush = Object.values(suitCnt).some(v=>v===5);
+        if (isStraight && isFlush) return {val:100, name:"同花順"};
+        if (isFlush) return {val:35, name:"同花"};
+        if (isStraight) return {val:30, name:"順子"};
+      }
+      if (vals.includes(4)) return {val:60, name:"四條"};
+      if (vals.includes(3) && vals.includes(2)) return {val:40, name:"葫蘆"};
+      if (vals.includes(3)) return {val:30, name:"三條"};
+      if (vals.filter(v=>v>=2).length >= 2) return {val:20, name:"兩對"};
+      if (vals.includes(2)) return {val:10, name:"一對"};
+      return {val:5, name:"無牌型"};
+    }
+
+    function stationScore(cards) {
+      let X=0, Y=0, Z=0;
+      cards.forEach(c => { if(c.rank==="K") X++; if(c.rank==="Q") Y++; if(c.rank==="J") Z++; });
+      return { val: X*3 + Y*2 - Z + 2, X, Y, Z };
+    }
+
+    function getFullScore(cards) {
+      if (!cards.length) return {total:0, pName:"—", sVal:0, X:0, Y:0, Z:0, pVal:0};
+      const p = patternScore(cards); const s = stationScore(cards);
+      return { total: p.val * s.val, pName: p.name, sVal: s.val, X: s.X, Y: s.Y, Z: s.Z, pVal: p.val };
+    }
+
+    function getAiMove() {
+      let best = { cards:[state.ai.hand[0]], sc: getFullScore([state.ai.hand[0]]) };
+      const n = state.ai.hand.length;
+      for(let i=1; i<(1<<n); i++) {
+        let sub = []; for(let j=0; j<n; j++) if((i>>j)&1) sub.push(state.ai.hand[j]);
+        if(sub.length > 5) continue;
+        let sc = getFullScore(sub); if(sc.total > best.sc.total) best = {cards:sub, sc};
+      }
+      if(best.sc.total <= 5) {
+        let suitGroups = {}; SUITS.forEach(s => suitGroups[s] = state.ai.hand.filter(c=>c.suit===s));
+        let targetSuit = SUITS.filter(s=>suitGroups[s].length>0).sort((a,b)=>suitGroups[a].length - suitGroups[b].length)[0];
+        let move = suitGroups[targetSuit].slice(0,2);
+        if(move.length < 2) move.push(state.ai.hand.find(c=>!move.includes(c)));
+        return move;
+      }
+      return best.cards;
+    }
+
+    // ======= 彈窗管理 =======
+    function toggleModal(show) { document.getElementById('modalHistory').classList.toggle('active', show); }
+    function toggleHowTo(show) { document.getElementById('modalHowToPlay').classList.toggle('active', show); }
+
+    function updateHistory() {
+      const content = document.getElementById('historyContent');
+      if (state.human.log.length === 0) { content.innerHTML = "尚無紀錄"; return; }
+      content.innerHTML = state.human.log.map((h, i) => {
+        const a = state.ai.log[i];
+        return `
+          <div style="border-bottom:1px solid #2b3a4d; padding:12px 0;">
+            <div style="color:var(--accent); font-weight:bold;">第 ${i+1} 輪</div>
+            <div style="margin-top:4px;">🧑 人類：${h.cards.map(c=>c.suit+c.rank).join(',')} (${h.sc.pName}, ${h.sc.total}分)</div>
+            <div>🤖 AI：${a.cards.map(c=>c.suit+c.rank).join(',')} (${a.sc.pName}, ${a.sc.total}分)</div>
+          </div>`;
+      }).join('');
+    }
+
+    function renderHand() {
+      const hDiv = document.getElementById('hand'); hDiv.innerHTML = "";
+      state.human.hand.forEach((c, i) => {
+        const card = document.createElement('div'); card.className = "card";
+        card.innerHTML = `<div class="tag ${getSuitClass(c.suit)}">${c.suit}</div><div class="rank">${c.rank}</div>`;
+        card.onclick = () => { if(state.locked) return; if(state.settings.sound) Sound.click(); if(!card.classList.contains('sel') && document.querySelectorAll('#hand .card.sel').length >= 5) return; card.classList.toggle('sel'); updateEstimate(); };
+        hDiv.appendChild(card);
+      });
+      renderAi();
+    }
+
+    function renderAi() {
+      const aiDiv = document.getElementById('aiHandDisplay'); aiDiv.innerHTML = "";
+      state.ai.hand.forEach(c => {
+        const card = document.createElement('div'); card.className = "card"; card.style.cursor = "default";
+        card.innerHTML = `<div class="tag ${getSuitClass(c.suit)}">${c.suit}</div><div class="rank">${c.rank}</div>`;
+        aiDiv.appendChild(card);
+      });
+    }
+
+    function updateEstimate() {
+      const sel = Array.from(document.querySelectorAll('#hand .card.sel')).map(el => {
+        const idx = Array.from(el.parentNode.children).indexOf(el);
+        return state.human.hand[idx];
+      });
+      const sc = getFullScore(sel);
+      document.getElementById('estPattern').textContent = sc.pVal || "—";
+      document.getElementById('estPatternName').textContent = sc.pName;
+      document.getElementById('estStation').textContent = sc.sVal || "—";
+      document.getElementById('estStationPills').innerHTML = `<span class="pill">K:${sc.X}</span><span class="pill">Q:${sc.Y}</span><span class="pill">J:${sc.Z}</span>`;
+      document.getElementById('estTotal').textContent = sc.total || "—";
+      document.getElementById('selHint').textContent = sel.length ? `已選 ${sel.length} 張` : "尚未選牌";
+      document.getElementById('btnPlay').disabled = (sel.length === 0 || state.locked);
+    }
+
+    async function play() {
+      state.locked = true;
+      const selEls = document.querySelectorAll('#hand .card.sel');
+      const hCards = Array.from(selEls).map(el => state.human.hand[Array.from(el.parentNode.children).indexOf(el)]);
+      const aCards = getAiMove();
+      if(state.settings.sound) Sound.play();
+      if(state.settings.anim) selEls.forEach(el => el.classList.add('play-anim'));
+      await new Promise(r => setTimeout(r, 400));
+      const hSc = getFullScore(hCards); const aSc = getFullScore(aCards);
+      state.human.total += hSc.total; state.ai.total += aSc.total;
+      state.human.log.push({cards: hCards, sc: hSc}); state.ai.log.push({cards: aCards, sc: aSc});
+      document.getElementById('roundResult').innerHTML = `🧑打出：${hCards.map(c=>c.suit+c.rank).join(',')} (${hSc.total}分)<br>🤖打出：${aCards.map(c=>c.suit+c.rank).join(',')} (${aSc.total}分)`;
+      state.human.hand = state.human.hand.filter(c => !hCards.includes(c)).concat(drawN(state.human.draw, hCards.length));
+      state.ai.hand = state.ai.hand.filter(c => !aCards.includes(c)).concat(drawN(state.ai.draw, aCards.length));
+      setTimeout(() => {
+        if(state.settings.sound) Sound.score();
+        document.getElementById('humanTotal').textContent = state.human.total;
+        document.getElementById('aiTotal').textContent = state.ai.total;
+        if(state.round < 7) { 
+          state.round++; state.locked = false; 
+          document.getElementById('roundResult').innerHTML = "等待雙方出牌...";
+          renderHand(); updateEstimate(); 
+        } else { 
+          const winnerText = state.human.total >= state.ai.total ? "恭喜您獲勝！" : "很遺憾 AI 獲勝。";
+          alert(`遊戲結束！${winnerText}\n人類總分：${state.human.total}\nAI 總分：${state.ai.total}`); 
+        }
+      }, 800);
+    }
+
+    function getSuitClass(s) { return {"北部":"s-north","中部":"s-center","南部":"s-south","東部":"s-east"}[s]; }
+    function drawN(p, n) { return p.splice(0, n); }
+
+    // 事件監聽
+    document.getElementById('btnHowToPlay').onclick = () => toggleHowTo(true);
+    document.getElementById('btnPlay').onclick = play;
+    document.getElementById('btnSound').onclick = function(){ state.settings.sound = !state.settings.sound; this.textContent = state.settings.sound ? "🔈 音效：開" : "🔇 音效：關"; };
+    document.getElementById('btnAnim').onclick = function(){ state.settings.anim = !state.settings.anim; this.textContent = state.settings.anim ? "🎞️ 動畫：開" : "🖼️ 動畫：關"; };
+    document.getElementById('btnToggleAi').onclick = () => document.getElementById('aiSection').classList.toggle('hidden');
+    document.getElementById('btnHistory').onclick = () => { updateHistory(); toggleModal(true); };
+    document.getElementById('btnSuggest').onclick = () => {
+        let best = { cards:[], sc: {total: -1} };
+        const n = state.human.hand.length;
+        for(let i=1; i<(1<<n); i++) {
+            let sub = []; for(let j=0; j<n; j++) if((i>>j)&1) sub.push(state.human.hand[j]);
+            if(sub.length > 5) continue;
+            let sc = getFullScore(sub); if(sc.total > best.sc.total) best = {cards:sub, sc};
+        }
+        document.querySelectorAll('#hand .card').forEach((el, i) => el.classList.toggle('sel', best.cards.includes(state.human.hand[i])));
+        updateEstimate();
+    };
+
+    // 初始化啟動
+    state.human.draw = makeDeck(); state.ai.draw = makeDeck();
+    state.human.hand = drawN(state.human.draw, 7); state.ai.hand = drawN(state.ai.draw, 7);
+    renderHand();
+  </script>
+</body>
+</html>
