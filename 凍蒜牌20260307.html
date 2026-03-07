@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>台灣大選年《開票牌》— 開局慶祝版</title>
+  <title>台灣大選年《凍蒜牌》— 開局慶祝版</title>
   <style>
     :root{
       --bg:#0b0f14; --panel:#121820; --muted:#7e8a9a; --text:#e6edf3;
@@ -82,7 +82,7 @@
 <body>
   <header>
     <div style="display:flex; align-items:center; gap:12px;">
-      <h1 style="margin:0; font-size:20px;">台灣大選年《開票牌》</h1>
+      <h1 style="margin:0; font-size:20px;">台灣大選年《凍蒜牌》</h1>
       <button class="btn ghost" id="btnHowToPlay" style="font-size:13px; padding:6px 12px;">💡 玩法說明</button>
     </div>
     <div style="display:flex; gap:8px;">
@@ -380,7 +380,7 @@
           document.getElementById('roundResult').innerHTML = "等待雙方出牌...";
           renderHand(); updateEstimate(); 
         } else { 
-          const winnerText = state.human.total >= state.ai.total ? "恭喜您當選！" : "很遺憾AI贏了。";
+          const winnerText = state.human.total >= state.ai.total ? "恭喜您當選！" : "很遺憾，您輸給AI同路人。";
           setTimeout(() => {
             alert(`遊戲結束！${winnerText}\n人類總分：${state.human.total}\nAI 總分：${state.ai.total}`); 
             initGame(); 
