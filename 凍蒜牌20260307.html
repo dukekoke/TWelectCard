@@ -380,7 +380,7 @@
           document.getElementById('roundResult').innerHTML = "等待雙方出牌...";
           renderHand(); updateEstimate(); 
         } else { 
-          const winnerText = state.human.total >= state.ai.total ? "恭喜您獲勝！" : "很遺憾 AI 獲勝。";
+          const winnerText = state.human.total >= state.ai.total ? "恭喜您當選！" : "很遺憾AI贏了。";
           setTimeout(() => {
             alert(`遊戲結束！${winnerText}\n人類總分：${state.human.total}\nAI 總分：${state.ai.total}`); 
             initGame(); 
