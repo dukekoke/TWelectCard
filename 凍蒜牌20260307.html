@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>台灣大選年《開票牌》— 完整功能版</title>
+  <title>台灣大選年《開票牌》— 開局慶祝版</title>
   <style>
     :root{
       --bg:#0b0f14; --panel:#121820; --muted:#7e8a9a; --text:#e6edf3;
@@ -27,20 +27,25 @@
     .cards{ display:flex; flex-wrap:wrap; gap:10px; }
     .card{
       cursor:pointer; background:#0f141b; border:1px solid #1e2834; border-radius:10px; padding:10px 12px;
-      display:flex; flex-direction:column; gap:6px; min-width:92px; transition: all .12s ease;
+      display:flex; flex-direction:column; gap:6px; min-width:92px; transition: transform .15s ease, opacity .15s ease;
+      position: relative; z-index: 1;
     }
     .card.sel{
       outline:2px solid var(--accent); background: #0f1823;
       animation: pulse 1.2s ease-in-out infinite;
     }
     @keyframes pulse{
-      0%, 100% { box-shadow: 0 0 0 6px rgba(76,194,255,.1); }
-      50% { box-shadow: 0 0 0 10px rgba(76,194,255,.2); }
+      0%, 100% { box-shadow: 0 0 0 4px rgba(76,194,255,0.1); }
+      50% { box-shadow: 0 0 0 8px rgba(76,194,255,0.2); }
     }
-    .card.play-anim{ animation: flyout .32s ease forwards; }
+    .card.play-anim{ 
+      animation: flyout 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards !important; 
+      pointer-events: none;
+      z-index: 100 !important;
+    }
     @keyframes flyout{
-      0%{ transform: translateY(0); opacity:1; }
-      100%{ transform: translateY(-30px); opacity:0; }
+      0%{ transform: translateY(0) scale(1); opacity:1; }
+      100%{ transform: translateY(-100px) scale(1.1); opacity:0; }
     }
 
     .tag{ font-size:12px; color:#dfe9f6; padding:2px 8px; border-radius:999px; width:max-content; border:1px solid rgba(255,255,255,0.12); }
@@ -56,7 +61,6 @@
     .btn.primary{ background:linear-gradient(90deg,#0ea5e9,#22d3ee); border:0; color:#06233a; }
     .btn.ghost{ background:transparent; }
 
-    /* 彈窗樣式 */
     .modal{ position:fixed; inset:0; background:rgba(0,0,0,0.85); display:none; align-items:center; justify-content:center; z-index:100; padding:20px; }
     .modal.active{ display:flex; }
     .modal-content{ background:var(--panel); border:1px solid #1e2834; border-radius:16px; width:100%; max-width:650px; max-height:85vh; overflow-y:auto; padding:24px; line-height: 1.6; }
@@ -65,12 +69,14 @@
     .hidden { display: none !important; }
     @media (max-width: 720px){ .scores { grid-template-columns: 1fr; } }
     
-    /* 規則說明清單 */
-    .rule-list { padding-left: 20px; margin: 10px 0; }
-    .rule-list li { margin-bottom: 8px; }
     table { width: 100%; border-collapse: collapse; margin-top: 10px; }
     th, td { border: 1px solid #2b3a4d; padding: 8px; text-align: left; }
     th { background: #1c2430; }
+
+    /* 彩帶 Canvas */
+    #confetti {
+      position: fixed; inset: 0; pointer-events: none; z-index: 200; display: none;
+    }
   </style>
 </head>
 <body>
@@ -85,6 +91,8 @@
       <button class="btn ghost" id="btnToggleAi">🤖 AI 手牌</button>
     </div>
   </header>
+
+  <canvas id="confetti"></canvas>
 
   <div class="container">
     <section class="panel hidden" id="aiSection">
@@ -133,15 +141,13 @@
         <button class="btn ghost" onclick="toggleHowTo(false)">關閉</button>
       </div>
       <p>這是一款結合台灣大選主題與撲克牌策略的對戰遊戲，您將與 AI 進行 7 輪開票對決。</p>
-      
       <h3 style="color:#c9d4e3; margin-top:20px;">基本流程：</h3>
-      <ul class="rule-list">
+      <ul style="padding-left:20px;">
         <li>每輪從 7 張手牌中選擇 <b>1 至 5 張</b> 作為本輪的「開票牌」。</li>
         <li>確認出牌後，系統會補足手牌至 7 張，直到 7 輪結束。</li>
         <li>計分公式：<b>本輪總分 = 牌型分數 × 政治明星助選站台分數</b></li>
         <li>花色：<b> 代表四個選區 ♣︎北部 ♥︎中部 ♠︎南部 ♦︎東部 </b></li>
       </ul>
-
       <h3 style="color:#c9d4e3; margin-top:20px;">牌型分數表：</h3>
       <table>
         <thead><tr><th>牌型</th><th>分數</th><th>說明</th></tr></thead>
@@ -150,15 +156,14 @@
           <tr><td>四條</td><td>60</td><td>4 張相同號碼 (鐵支)</td></tr>
           <tr><td>葫蘆</td><td>40</td><td>3 + 2 組合</td></tr>
           <tr><td>同花 / 順子</td><td>35 / 30</td><td>5 張同區域 / 5 張連號</td></tr>
-          <tr><td>三條</td><td>30</td><td>3 張相同號碼 </td></tr>
+          <tr><td>三條</td><td>30</td><td>3 張相同號碼</td></tr>
           <tr><td>兩對 / 一對</td><td>20 / 10</td><td>2 + 2 組合 / 2 張相同號碼</td></tr>
           <tr><td>無牌型</td><td>5</td><td>不具備以上條件</td></tr>
         </tbody>
       </table>
-
       <h3 style="color:#c9d4e3; margin-top:20px;">站台分數計算：</h3>
       <p>站台分數基於 J 、Q 、K 的張數：</p>
-      <ul class="rule-list">
+      <ul style="padding-left:20px;">
         <li>公式：<b>(K 張數 × 3) + (Q 張數 × 2) - (J 張數 × 1) + 2</b></li>
         <li> K 與 Q 是強力助選員，而 J (反骨仔)則可能造成負面影響。</li>
       </ul>
@@ -176,7 +181,45 @@
   </div>
 
   <script>
-    // ======= 音效與動畫設定 =======
+    // ======= 彩帶引擎 (Confetti) =======
+    const Confetti = (() => {
+      const canvas = document.getElementById('confetti');
+      const ctx = canvas.getContext('2d');
+      let w, h, particles = [], active = false;
+      const colors = ['#ff7676','#ffd166','#06d6a0','#4cc2ff','#be79df'];
+
+      function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
+      function create() {
+        particles = [];
+        for(let i=0; i<100; i++) {
+          particles.push({
+            x: Math.random()*w, y: Math.random()*h - h,
+            r: 4 + Math.random()*6, c: colors[Math.floor(Math.random()*colors.length)],
+            vx: -1 + Math.random()*2, vy: 2 + Math.random()*4,
+            a: Math.random()*Math.PI*2, va: -0.1 + Math.random()*0.2
+          });
+        }
+      }
+      function update() {
+        ctx.clearRect(0,0,w,h);
+        particles.forEach(p => {
+          p.x += p.vx; p.y += p.vy; p.a += p.va;
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a);
+          ctx.fillStyle = p.c; ctx.fillRect(-p.r, -p.r, p.r*2, p.r*2*0.6);
+          ctx.restore();
+        });
+        particles = particles.filter(p => p.y < h);
+        if(particles.length > 0 && active) requestAnimationFrame(update);
+        else canvas.style.display = 'none';
+      }
+      return {
+        start: () => {
+          active = true; canvas.style.display = 'block'; resize(); create(); update();
+          setTimeout(() => active = false, 3000);
+        }
+      };
+    })();
+
     const Sound = (() => {
       let ctx = null, enabled = true;
       function ensure(){ if(!enabled) return; if(!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)(); if(ctx.state === 'suspended') ctx.resume(); }
@@ -217,7 +260,6 @@
       const rankCnt = {}; cards.forEach(c => rankCnt[c.rank] = (rankCnt[c.rank]||0)+1);
       const suitCnt = {}; cards.forEach(c => suitCnt[c.suit] = (suitCnt[c.suit]||0)+1);
       const vals = Object.values(rankCnt);
-      
       if (n === 5) {
         const sorted = cards.map(c=>c.val).sort((a,b)=>a-b);
         const isStraight = sorted.every((v,i,a) => i===0 || v === a[i-1]+1);
@@ -264,7 +306,6 @@
       return best.cards;
     }
 
-    // ======= 彈窗管理 =======
     function toggleModal(show) { document.getElementById('modalHistory').classList.toggle('active', show); }
     function toggleHowTo(show) { document.getElementById('modalHowToPlay').classList.toggle('active', show); }
 
@@ -273,12 +314,7 @@
       if (state.human.log.length === 0) { content.innerHTML = "尚無紀錄"; return; }
       content.innerHTML = state.human.log.map((h, i) => {
         const a = state.ai.log[i];
-        return `
-          <div style="border-bottom:1px solid #2b3a4d; padding:12px 0;">
-            <div style="color:var(--accent); font-weight:bold;">第 ${i+1} 輪</div>
-            <div style="margin-top:4px;">🧑 人類：${h.cards.map(c=>c.suit+c.rank).join(',')} (${h.sc.pName}, ${h.sc.total}分)</div>
-            <div>🤖 AI：${a.cards.map(c=>c.suit+c.rank).join(',')} (${a.sc.pName}, ${a.sc.total}分)</div>
-          </div>`;
+        return `<div style="border-bottom:1px solid #2b3a4d; padding:12px 0;"><div style="color:var(--accent); font-weight:bold;">第 ${i+1} 輪</div><div style="margin-top:4px;">🧑 人類：${h.cards.map(c=>c.suit+c.rank).join(',')} (${h.sc.pName}, ${h.sc.total}分)</div><div>🤖 AI：${a.cards.map(c=>c.suit+c.rank).join(',')} (${a.sc.pName}, ${a.sc.total}分)</div></div>`;
       }).join('');
     }
 
@@ -318,13 +354,16 @@
     }
 
     async function play() {
+      if (state.locked) return;
       state.locked = true;
       const selEls = document.querySelectorAll('#hand .card.sel');
       const hCards = Array.from(selEls).map(el => state.human.hand[Array.from(el.parentNode.children).indexOf(el)]);
       const aCards = getAiMove();
       if(state.settings.sound) Sound.play();
-      if(state.settings.anim) selEls.forEach(el => el.classList.add('play-anim'));
-      await new Promise(r => setTimeout(r, 400));
+      if(state.settings.anim) {
+        requestAnimationFrame(() => { selEls.forEach(el => el.classList.add('play-anim')); });
+        await new Promise(r => setTimeout(r, 650)); 
+      }
       const hSc = getFullScore(hCards); const aSc = getFullScore(aCards);
       state.human.total += hSc.total; state.ai.total += aSc.total;
       state.human.log.push({cards: hCards, sc: hSc}); state.ai.log.push({cards: aCards, sc: aSc});
@@ -337,19 +376,40 @@
         document.getElementById('aiTotal').textContent = state.ai.total;
         if(state.round < 7) { 
           state.round++; state.locked = false; 
+          document.getElementById('roundNo').textContent = state.round; 
           document.getElementById('roundResult').innerHTML = "等待雙方出牌...";
           renderHand(); updateEstimate(); 
         } else { 
           const winnerText = state.human.total >= state.ai.total ? "恭喜您獲勝！" : "很遺憾 AI 獲勝。";
-          alert(`遊戲結束！${winnerText}\n人類總分：${state.human.total}\nAI 總分：${state.ai.total}`); 
+          setTimeout(() => {
+            alert(`遊戲結束！${winnerText}\n人類總分：${state.human.total}\nAI 總分：${state.ai.total}`); 
+            initGame(); 
+          }, 1000);
         }
-      }, 800);
+      }, 500);
+    }
+
+    function initGame() {
+      state.round = 1;
+      state.human = { hand:[], draw:makeDeck(), total:0, log:[] };
+      state.ai = { hand:[], draw:[], total:0, log:[] }; // 修正：AI 使用同一副牌或獨立副牌視需求，此處維持獨立
+      state.ai.draw = makeDeck();
+      state.human.hand = drawN(state.human.draw, 7);
+      state.ai.hand = drawN(state.ai.draw, 7);
+      state.locked = false;
+      document.getElementById('humanTotal').textContent = "0";
+      document.getElementById('aiTotal').textContent = "0";
+      document.getElementById('roundNo').textContent = "1";
+      document.getElementById('roundResult').innerHTML = "等待雙方出牌...";
+      renderHand();
+      updateEstimate();
+      // 在新局開始時播放彩帶動畫
+      if(state.settings.anim) Confetti.start();
     }
 
     function getSuitClass(s) { return {"北部":"s-north","中部":"s-center","南部":"s-south","東部":"s-east"}[s]; }
     function drawN(p, n) { return p.splice(0, n); }
 
-    // 事件監聽
     document.getElementById('btnHowToPlay').onclick = () => toggleHowTo(true);
     document.getElementById('btnPlay').onclick = play;
     document.getElementById('btnSound').onclick = function(){ state.settings.sound = !state.settings.sound; this.textContent = state.settings.sound ? "🔈 音效：開" : "🔇 音效：關"; };
@@ -368,10 +428,7 @@
         updateEstimate();
     };
 
-    // 初始化啟動
-    state.human.draw = makeDeck(); state.ai.draw = makeDeck();
-    state.human.hand = drawN(state.human.draw, 7); state.ai.hand = drawN(state.ai.draw, 7);
-    renderHand();
+    window.onload = initGame;
   </script>
 </body>
 </html>
