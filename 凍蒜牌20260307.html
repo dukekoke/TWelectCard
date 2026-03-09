@@ -278,13 +278,12 @@
       return { total: p.val * s.val, pName: p.name, sVal: s.val, X: s.X, Y: s.Y, Z: s.Z, pVal: p.val };
     }
 
-
 function calculateAiNextMove() {
-  // 枚舉所有 1~5 張子集
   const hand = state.ai.hand;
   const n = hand.length;
   let bestByTotal = { cards: [hand[0]], sc: getFullScore([hand[0]]) };
   let bestByTotalNoQK = { cards: [], sc: { total: -1, pVal: 0 } };
+  let bestByTotalNoJQK = { cards: [], sc: { total: -1, pVal: 0 } };
   let bestPatternVal = 0;
 
   for (let i = 1; i < (1 << n); i++) {
@@ -293,59 +292,50 @@ function calculateAiNextMove() {
     if (sub.length === 0 || sub.length > 5) continue;
 
     const sc = getFullScore(sub);
-    if (sc.pVal > bestPatternVal) bestPatternVal = sc.pVal;       // 全域最佳牌型分數
+    if (sc.pVal > bestPatternVal) bestPatternVal = sc.pVal; // 全域最佳牌型分數
     if (sc.total > bestByTotal.sc.total) bestByTotal = { cards: sub, sc }; // 總分最佳
 
-    const hasQK = sub.some(c => c.rank === 'Q' || c.rank === 'K'); // 排除 Q/K 的最佳
+    const hasQK = sub.some(c => c.rank === 'Q' || c.rank === 'K');
     if (!hasQK && sc.total > bestByTotalNoQK.sc.total) {
       bestByTotalNoQK = { cards: sub, sc };
     }
+
+    const hasJQK = sub.some(c => c.rank === 'J' || c.rank === 'Q' || c.rank === 'K');
+    if (!hasJQK && sc.total > bestByTotalNoJQK.sc.total) {
+      bestByTotalNoJQK = { cards: sub, sc };
+    }
   }
 
+  // 規則 B：最佳牌型分數 < 20 ⇒ 出牌不得含 Q/K，且必須包含所有 J；
+  // 目標為出到 5 張（若非 Q/K 總數不足 5，則盡量出到最多張，仍不包含 Q/K）。
+  if (bestPatternVal < 20) {
+    const isQK = c => (c.rank === 'Q' || c.rank === 'K');
+    const Js = hand.filter(c => c.rank === 'J');
+    const othersNoQK = hand.filter(c => c.rank !== 'J' && !isQK(c)).sort((a,b)=>a.val-b.val);
 
-// 規則 ：前三輪且最佳牌型分數 < 80 ⇒ 不含 J/Q/K 的最佳，並補牌至 5 張（若可）。
-if (state.round <= 3 && bestPatternVal < 80 && bestByTotalNoQK.cards.length > 0) {
-  const isQK = c => (c.rank === 'Q' || c.rank === 'K');
-  let pick = [...bestByTotalNoQK.cards];
+    let pick = [...Js];
+    for (const c of othersNoQK) { if (pick.length >= 5) break; if (!pick.includes(c)) pick.push(c); }
 
-  // 用手上其他非 J/Q/K 牌補到 5 張（依點數由小到大）
-  const poolNoQK = hand.filter(c => !isQK(c)).sort((a,b)=>a.val-b.val);
-  for (const c of poolNoJQK) { if (pick.length >= 5) break; if (!pick.includes(c)) pick.push(c); }
-
-  state.ai.nextMove = pick.slice(0, Math.min(5, poolNoJQK.length));
-  return;
-
-  }
- 
-
-
-// 規則 ：最佳牌型分數 < 20 ⇒ 出牌不得含 Q/K，且必須包含所有 J；
-// 目標為出到 5 張（若非 Q/K 總數不足 5，則盡量出到最多張，仍不包含 Q/K）。
-if (bestPatternVal < 20) {
-  const isQK = c => (c.rank === 'Q' || c.rank === 'K');
-  const Js = hand.filter(c => c.rank === 'J');
-  const othersNoQK = hand.filter(c => c.rank !== 'J' && !isQK(c)).sort((a,b)=>a.val-b.val);
-
-  let pick = [...Js]; // 必須包含所有 J
-  for (const c of othersNoQK) {      // 嚴禁 Q/K，只用非 Q/K 牌補足
-    if (pick.length >= 5) break;
-    if (!pick.includes(c)) pick.push(c);
+    state.ai.nextMove = pick.slice(0, 5);
+    return;
   }
 
-  state.ai.nextMove = pick.slice(0, 5); // 若不足 5 張，也不會補 Q/K
-  return;
+  // 規則 A（新版）：前三輪且最佳牌型分數 < 80 ⇒ 不含 J/Q/K 的最佳，並補牌至 5 張（若可）。
+  if (state.round <= 3 && bestPatternVal < 80 && bestByTotalNoJQK.cards.length > 0) {
+    const isJQK = c => (c.rank === 'J' || c.rank === 'Q' || c.rank === 'K');
+    let pick = [...bestByTotalNoJQK.cards];
 
+    // 用手上其他非 J/Q/K 牌補到 5 張（依點數由小到大）
+    const poolNoJQK = hand.filter(c => !isJQK(c)).sort((a,b)=>a.val-b.val);
+    for (const c of poolNoJQK) { if (pick.length >= 5) break; if (!pick.includes(c)) pick.push(c); }
+
+    state.ai.nextMove = pick.slice(0, Math.min(5, poolNoJQK.length));
+    return;
   }
-
-
-
-
 
   // 其他情況 ⇒ 維持總分最佳
   state.ai.nextMove = bestByTotal.cards;
 }
-
-
 
     function toggleModal(show) { document.getElementById('modalHistory').classList.toggle('active', show); }
     function toggleHowTo(show) { document.getElementById('modalHowToPlay').classList.toggle('active', show); }
