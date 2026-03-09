@@ -303,16 +303,16 @@ function calculateAiNextMove() {
   }
 
 
-// 規則 ：前三輪且最佳牌型分數 < 80 ⇒ 不含 Q/K 的最佳，並補牌至 5 張（若可）。
+// 規則 ：前三輪且最佳牌型分數 < 80 ⇒ 不含 J/Q/K 的最佳，並補牌至 5 張（若可）。
 if (state.round <= 3 && bestPatternVal < 80 && bestByTotalNoQK.cards.length > 0) {
   const isQK = c => (c.rank === 'Q' || c.rank === 'K');
   let pick = [...bestByTotalNoQK.cards];
 
-  // 用手上其他非 Q/K 牌補到 5 張（依點數由小到大）
+  // 用手上其他非 J/Q/K 牌補到 5 張（依點數由小到大）
   const poolNoQK = hand.filter(c => !isQK(c)).sort((a,b)=>a.val-b.val);
-  for (const c of poolNoQK) { if (pick.length >= 5) break; if (!pick.includes(c)) pick.push(c); }
+  for (const c of poolNoJQK) { if (pick.length >= 5) break; if (!pick.includes(c)) pick.push(c); }
 
-  state.ai.nextMove = pick.slice(0, Math.min(5, poolNoQK.length));
+  state.ai.nextMove = pick.slice(0, Math.min(5, poolNoJQK.length));
   return;
 
   }
