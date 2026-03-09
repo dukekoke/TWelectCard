@@ -307,9 +307,9 @@ function calculateAiNextMove() {
   }
 
 
-  // 規則 B：前三輪且最佳牌型分數 < 10 ⇒ 出牌不得含 Q/K，且必須包含所有 J；
+  // 規則 B：前三輪且最佳牌型分數 <= 10 ⇒ 出牌不得含 Q/K，且必須包含所有 J；
   // 目標為出到 5 張（若非 Q/K 總數不足 5，則盡量出到最多張，仍不包含 Q/K）。
-  if (state.round <= 3 && bestPatternVal < 10) {
+  if (state.round <= 3 && bestPatternVal <= 10) {
     const isQK = c => (c.rank === 'Q' || c.rank === 'K');
     const Js = hand.filter(c => c.rank === 'J');
     const othersNoQK = hand.filter(c => c.rank !== 'J' && !isQK(c)).sort((a,b)=>a.val-b.val);
