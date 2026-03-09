@@ -1,895 +1,499 @@
 
+
 <!doctype html>
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>台灣大選年《開票牌》— 人類 vs AI（含音效、動畫、自動換輪）</title>
-
-
-  
+  <title>台灣大選年《凍蒜牌》</title>
   <style>
-  
-  
     :root{
-      --bg:#0b0f14;
-      --panel:#121820;
-      --muted:#7e8a9a;
-      --text:#e6edf3;
-      --accent:#4cc2ff;
-      --good:#2ecc71;
-      --warn:#f39c12;
-      --bad:#e74c3c;
-
-      --s-north:#2e86de;  /* 北部 */
-      --s-center:#27ae60; /* 中部 */
-      --s-south:#e74c3c;  /* 南部 */
-      --s-east:#8e44ad;   /* 東部 */
+      --bg:#0b0f14; --panel:#121820; --muted:#7e8a9a; --text:#e6edf3;
+      --accent:#4cc2ff; --good:#2ecc71; --warn:#f39c12; --bad:#e74c3c;
+      --s-north:#2e86de; --s-center:#27ae60; --s-south:#e74c3c; --s-east:#8e44ad;
     }
     *{ box-sizing: border-box; }
     body{
-      margin:0;
-      background:linear-gradient(180deg,#0b0f14 0%, #0b0f14 40%, #0e141b 100%);
-      color:var(--text);
-      font:16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", Arial, sans-serif;
-      padding-bottom:80px; /* 空間預留給底部分數條 */
-      overflow-x:hidden;
+      margin:0; background:linear-gradient(180deg,#0b0f14 0%, #0b0f14 40%, #0e141b 100%);
+      color:var(--text); font:16px/1.5 system-ui, sans-serif; padding-bottom:100px;
     }
     header{
-      padding:20px clamp(16px,4vw,32px);
-      border-bottom:1px solid #1e2834;
-      background:rgba(18,24,32,0.8);
-      backdrop-filter: blur(6px);
-      position:sticky; top:0; z-index:10;
-      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:15px clamp(16px,4vw,32px); border-bottom:1px solid #1e2834;
+      background:rgba(18,24,32,0.8); backdrop-filter: blur(6px);
+      position:sticky; top:0; z-index:10; display:flex; align-items:center; justify-content:space-between;
     }
-    h1{ font-size:20px; margin:0 0 4px; }
-    .sub{ color:var(--muted); font-size:14px; }
-    .controls{ display:flex; gap:8px; }
-
-    .container{
-      max-width:1100px;
-      margin:20px auto;
-      padding:0 clamp(16px,4vw,32px);
-    }
-
-    .board{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap:16px;
-    }
-
-    .panel{
-      background:var(--panel);
-      border:1px solid #1e2834;
-      border-radius:12px;
-      padding:14px;
-      box-shadow: 0 6px 16px rgba(0,0,0,0.25);
-    }
-    .panel h2{
-      font-size:18px; margin:0 0 10px; color:#c9d4e3;
-    }
-
-    .row{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
-
-    .meta{
-      display:grid; gap:10px;
-      grid-template-columns: repeat(2, minmax(220px,1fr));
-    }
-    .meta .box{ background:#0f141b; border:1px solid #1c2430; border-radius:10px; padding:10px; }
-    .meta .box .lab{ color:var(--muted); font-size:13px; margin-bottom:4px; }
-    .meta .box .val{ font-size:16px; }
-
-    /* 卡片群組 */
+    .container{ max-width:1100px; margin:20px auto; padding:0 clamp(16px,4vw,32px); }
+    .panel{ background:var(--panel); border:1px solid #1e2834; border-radius:12px; padding:18px; margin-bottom:16px; }
+    .panel h2{ font-size:18px; margin:0 0 12px; color:#c9d4e3; }
+    
     .cards{ display:flex; flex-wrap:wrap; gap:10px; }
     .card{
-      user-select:none;
-      cursor:pointer;
-      background:#0f141b;
-      border:1px solid #1e2834;
-      border-radius:10px;
-      padding:10px 12px;
-      display:flex; flex-direction:column; gap:6px;
-      min-width:92px;
-      transition: transform .12s ease, border-color .12s ease, box-shadow .12s ease, background .12s ease;
+      cursor:pointer; background:#0f141b; border:1px solid #1e2834; border-radius:10px; padding:10px 12px;
+      display:flex; flex-direction:column; gap:6px; min-width:92px; transition: transform .15s ease, opacity .15s ease;
+      position: relative; z-index: 1;
     }
-    .card:hover{ transform: translateY(-2px); border-color:#2b3a4d; }
     .card.sel{
-      outline:2px solid var(--accent);
-      border-color:var(--accent);
-      box-shadow: 0 0 0 6px rgba(76,194,255,.12);
-      background: #0f1823;
+      outline:2px solid var(--accent); background: #0f1823;
       animation: pulse 1.2s ease-in-out infinite;
     }
     @keyframes pulse{
-      0%{ box-shadow: 0 0 0 6px rgba(76,194,255,.10); }
-      50%{ box-shadow: 0 0 0 10px rgba(76,194,255,.22); }
-      100%{ box-shadow: 0 0 0 6px rgba(76,194,255,.10); }
+      0%, 100% { box-shadow: 0 0 0 4px rgba(76,194,255,0.1); }
+      50% { box-shadow: 0 0 0 8px rgba(76,194,255,0.2); }
     }
-    /* 出牌飛出動畫（選中卡片） */
-    .card.play-anim{
-      animation: flyout .32s ease forwards;
+    .card.play-anim{ 
+      animation: flyout 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards !important; 
+      pointer-events: none;
+      z-index: 100 !important;
     }
     @keyframes flyout{
       0%{ transform: translateY(0) scale(1); opacity:1; }
-      100%{ transform: translateY(-24px) scale(1.05); opacity:0; }
+      100%{ transform: translateY(-100px) scale(1.1); opacity:0; }
     }
-
-    .tag{
-      font-size:12px; color:#dfe9f6; padding:2px 8px; border-radius:999px; width:max-content;
-      border:1px solid rgba(255,255,255,0.12);
-      letter-spacing:.5px;
-    }
-    .s-north{ background:linear-gradient(90deg,var(--s-north),#4aa3ff); }
-    .s-center{ background:linear-gradient(90deg,var(--s-center),#4ddf8d); }
-    .s-south{ background:linear-gradient(90deg,var(--s-south),#ff7676); }
-    .s-east{ background:linear-gradient(90deg,var(--s-east),#be79df); }
+    .tag{ font-size:12px; color:#dfe9f6; padding:2px 8px; border-radius:999px; width:max-content; border:1px solid rgba(255,255,255,0.12); }
+    .s-north{ background:var(--s-north); } .s-center{ background:var(--s-center); } .s-south{ background:var(--s-south); } .s-east{ background:var(--s-east); }
     .rank{ font-size:20px; font-weight:700; }
-    .suit{ font-size:13px; color:#c7d2e3; }
-
-    .hint{ color:var(--muted); font-size:14px; }
-
-    .btn{
-      appearance: none;
-      border:1px solid #2b3a4d;
-      background:#0f141b;
-      color:#e9f1fb;
-      padding:10px 14px;
-      border-radius:10px;
-      cursor:pointer;
-      transition: all .12s ease;
-      font-weight:600;
-    }
-    .btn:hover{ border-color:#3d536d; transform: translateY(-1px); }
-    .btn.primary{ background:linear-gradient(90deg,#0ea5e9,#22d3ee); border:0; color:#06233a; }
-    .btn.primary:hover{ filter:brightness(1.05); }
-    .btn.ghost{ background:transparent; }
-    .btn:disabled{ opacity:.6; cursor:not-allowed; transform:none; }
-
-    .scores{
-      display:grid; gap:10px;
-      grid-template-columns: repeat(3, minmax(220px,1fr));
-    }
+    .scores{ display:grid; gap:10px; grid-template-columns: repeat(3, 1fr); }
     .scorebox{ background:#0f141b; border:1px solid #1c2430; border-radius:10px; padding:10px; }
-    .scorebox .title{ color:#cbd5e1; font-size:13px; margin-bottom:6px; }
-    .scorebox .big{ font-size:22px; font-weight:800; }
-    .scorebox .small{ color:var(--muted); font-size:13px; }
-
-    .divider{ height:1px; background:#1e2834; margin:10px 0; }
-
-    .footer-bar{
-      position:fixed; bottom:0; left:0; right:0;
-      background:rgba(10,14,18,0.92);
-      border-top:1px solid #1e2834;
-      padding:10px clamp(12px,4vw,24px);
-      z-index:20;
-      backdrop-filter: blur(6px);
-    }
-    .footer-bar .wrap{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
-    .totals{ font-weight:800; font-size:16px; }
-    .round{ color:var(--muted); }
-
-    .result{
-      background:#0f141b; border:1px solid #1c2430; border-radius:12px; padding:12px;
-      opacity:0; transform: translateY(6px) scale(.98);
-      transition: transform .18s ease, opacity .18s ease;
-    }
-    .result.show{
-      opacity:1; transform: translateY(0) scale(1);
-    }
-    .result h3{ margin:0 0 8px; font-size:16px; color:#dbe7f6; }
-    .result .row{ align-items:flex-start; }
-    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-
-    .pill{
-      display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; border:1px solid #2b3a4d; color:#dbe7f6; margin-right:6px;
-    }
-
-    /* 彩帶層 */
-    #confetti{
-      position:fixed; inset:0; pointer-events:none; z-index:30; display:none;
-    }
-
-    /* 減少動態效果時停用動態 */
-    @media (prefers-reduced-motion: reduce){
-      .card, .btn, .result{ transition: none !important; }
-      .card.sel{ animation: none !important; }
-    }
-
-    @media (max-width: 720px){
-      .meta{ grid-template-columns: 1fr; }
-      .scores{ grid-template-columns: 1fr; }
-      .card{ min-width: calc(50% - 10px); }
-    }
+    .big{ font-size:22px; font-weight:800; }
+    .pill{ display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; border:1px solid #2b3a4d; margin-right:4px; }
+    .btn{ appearance:none; border:1px solid #2b3a4d; background:#0f141b; color:#e9f1fb; padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:600; }
+    .btn.primary{ background:linear-gradient(90deg,#0ea5e9,#22d3ee); border:0; color:#06233a; }
+    .btn.ghost{ background:transparent; }
+    .modal{ position:fixed; inset:0; background:rgba(0,0,0,0.85); display:none; align-items:center; justify-content:center; z-index:100; padding:20px; }
+    .modal.active{ display:flex; }
+    .modal-content{ background:var(--panel); border:1px solid #1e2834; border-radius:16px; width:100%; max-width:650px; max-height:85vh; overflow-y:auto; padding:24px; line-height: 1.6; }
+    .footer-bar{ position:fixed; bottom:0; left:0; right:0; background:rgba(10,14,18,0.95); border-top:1px solid #1e2834; padding:15px; z-index:20; }
+    .hidden { display: none !important; }
+    @media (max-width: 720px){ .scores { grid-template-columns: 1fr; } }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #2b3a4d; padding: 8px; text-align: left; }
+    th { background: #1c2430; }
+    #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 200; display: none; }
   </style>
 </head>
 <body>
   <header>
-    <div>
-      <h1>台灣大選年《開票牌》</h1>
-      <div class="sub">人類 vs AI · 7 輪制 · 計分＝牌型分數 × 站台分數（X×3 + Y×2 − Z + 2）</div>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <h1 style="margin:0; font-size:20px;">台灣大選年《凍蒜牌》</h1>
+      <button class="btn ghost" id="btnHowToPlay" style="font-size:13px; padding:6px 12px;">💡 玩法說明</button>
     </div>
-    <div class="controls">
+    <div style="display:flex; gap:8px;">
       <button class="btn ghost" id="btnSound">🔈 音效：開</button>
       <button class="btn ghost" id="btnAnim">🎞️ 動畫：開</button>
+      <button class="btn ghost" id="btnToggleAi">🤖 AI 同路人手牌</button>
     </div>
   </header>
 
   <canvas id="confetti"></canvas>
 
   <div class="container">
-    <div class="board">
-      <!-- 遊戲資訊 -->
-      <section class="panel">
-        <h2>對戰資訊</h2>
-        <div class="meta">
-          <div class="box">
-            <div class="lab">目前輪次</div>
-            <div class="val"><span id="roundNo">1</span> / 7</div>
-          </div>
-          <div class="box">
-            <div class="lab">母牌堆剩餘（人類 / AI）</div>
-            <div class="val"><span id="humanDeckLeft">45</span> 張 / <span id="aiDeckLeft">45</span> 張</div>
-          </div>
-        </div>
-      </section>
+    <section class="panel hidden" id="aiSection">
+      <h2>🤖 AI 同路人手牌 </h2>
+      <div class="cards" id="aiHandDisplay"></div>
+    </section>
 
-      <!-- 手牌與操作 -->
-      <section class="panel">
-        <h2>你的手牌（點選可勾選，最多 5 張）</h2>
-        <div class="cards" id="hand"></div>
-        <div class="divider"></div>
-        <div class="row">
-          <button class="btn" id="btnSuggest">採用最佳建議</button>
-          <button class="btn primary" id="btnPlay" disabled>出牌</button>
-          <button class="btn ghost" id="btnClear">清除選擇</button>
-          <span class="hint" id="selHint">尚未選牌</span>
-        </div>
-      </section>
+    <section class="panel">
+      <h2>你的手牌 (1-5 張)</h2>
+      <div class="cards" id="hand"></div>
+      <div style="margin-top:15px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <button class="btn" id="btnSuggest">採用建議</button>
+        <button class="btn primary" id="btnPlay" disabled>出牌</button>
+        <button class="btn ghost" id="btnHistory">查看出牌紀錄</button>
+        <span id="selHint" style="font-size:14px; color:var(--muted)">尚未選牌</span>
+      </div>
+    </section>
 
-      <!-- 即時預估分數 -->
-      <section class="panel">
-        <h2>本輪預估</h2>
-        <div class="scores">
-          <div class="scorebox">
-            <div class="title">牌型分數（取最高）</div>
-            <div class="big" id="estPattern">—</div>
-            <div class="small" id="estPatternName">—</div>
-          </div>
-          <div class="scorebox">
-            <div class="title">站台分數（X=K, Y=Q, Z=J）</div>
-            <div class="big" id="estStation">—</div>
-            <div class="small"><span class="pill" id="estX">K:0</span><span class="pill" id="estY">Q:0</span><span class="pill" id="estZ">J:0</span></div>
-          </div>
-          <div class="scorebox">
-            <div class="title">本輪總分</div>
-            <div class="big" id="estTotal">—</div>
-            <div class="small" id="estNote">請選 1–5 張作為本輪「開票牌」</div>
-          </div>
-        </div>
-      </section>
+    <section class="panel">
+      <h2>本輪預估</h2>
+      <div class="scores">
+        <div class="scorebox"><div>牌型分數</div><div class="big" id="estPattern">—</div><div id="estPatternName" style="font-size:13px;">—</div></div>
+        <div class="scorebox"><div>站台分數</div><div class="big" id="estStation">—</div><div id="estStationPills"></div></div>
+        <div class="scorebox"><div>預估總分</div><div class="big" id="estTotal">—</div></div>
+      </div>
+    </section>
 
-      <!-- 本輪結果與歷史 -->
-      <section class="panel">
-        <h2>本輪結果</h2>
-        <div class="result" id="roundResult">
-          <h3>尚未出牌</h3>
-          <div class="hint">出牌後會顯示你與 AI 的本輪組合與分數。</div>
-        </div>
-        <div class="row" style="margin-top:10px;">
-          <!-- 已移除「下一輪」按鈕 -->
-          <button class="btn ghost" id="btnRestart">重新開始</button>
-        </div>
-      </section>
+    <section class="panel">
+      <h2>本輪結果</h2>
+      <div id="roundResult">等待雙方出牌...</div>
+    </section>
+  </div>
+
+  <div class="footer-bar">
+    <div style="display:flex; justify-content:space-around; max-width:1100px; margin:0 auto; font-weight:800;">
+      <div>🧑 您：<span id="humanTotal">0</span></div>
+      <div>🤖 AI同路人：<span id="aiTotal">0</span></div>
+      <div style="color:var(--muted)">第 <span id="roundNo">1</span> / 7 輪</div>
     </div>
   </div>
 
-  <!-- 底部分數條 -->
-  <div class="footer-bar">
-    <div class="wrap">
-      <div class="totals">🧑 人類累積：<span id="humanTotal">0</span> 分　｜　🤖 AI 累積：<span id="aiTotal">0</span> 分</div>
-      <div class="round">第 <span id="roundNo2">1</span> / 7 輪</div>
+  <div class="modal" id="modalHowToPlay">
+    <div class="modal-content">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <h2 style="margin:0; color:var(--accent);">🗳️ 玩法說明</h2>
+        <button class="btn ghost" onclick="toggleHowTo(false)">關閉</button>
+      </div>
+      <p>這是一款結合大選主題與撲克牌策略的對戰遊戲，您將與 AI 同路人進行 7 輪開票對決。</p>
+      <h3 style="color:#c9d4e3; margin-top:20px;">基本流程：</h3>
+      <ul style="padding-left:20px;">
+        <li>每輪從 7 張手牌中選擇 <b>1 至 5 張</b> 作為本輪的「開票牌」。</li>
+        <li>確認出牌後，系統會補足手牌至 7 張，直到 7 輪結束。</li>
+        <li>計分公式：<b>本輪總分 = 牌型分數 × 政治明星助選站台分數</b></li>
+        <li>花色：<b> 代表四個選區 ♣︎北部 ♥︎中部 ♠︎南部 ♦︎東部 </b></li>
+      </ul>
+      <h3 style="color:#c9d4e3; margin-top:20px;">牌型分數表：</h3>
+      <table>
+        <thead><tr><th>牌型</th><th>分數</th><th>說明</th></tr></thead>
+        <tbody>
+          <tr><td>同花順</td><td>100</td><td>5 張同區域且連號</td></tr>
+          <tr><td>四條</td><td>60</td><td>4 張相同號碼 (鐵支)</td></tr>
+          <tr><td>葫蘆</td><td>40</td><td>3 + 2 組合</td></tr>
+          <tr><td>同花 / 順子</td><td>35 / 30</td><td>5 張同區域 / 5 張連號</td></tr>
+          <tr><td>三條</td><td>30</td><td>3 張相同號碼 </td></tr>
+          <tr><td>兩對 / 一對</td><td>20 / 10</td><td>2 + 2 組合 / 2 張相同號碼</td></tr>
+          <tr><td>無牌型</td><td>5</td><td>不具備以上條件</td></tr>
+        </tbody>
+      </table>
+      <h3 style="color:#c9d4e3; margin-top:20px;">站台分數計算：</h3>
+      <p>站台分數基於 J 、Q 、K 的張數：</p>
+      <ul style="padding-left:20px;">
+        <li>公式：<b>(K 張數 × 3) + (Q 張數 × 2) - (J 張數 × 1) + 2</b></li>
+        <li> K 與 Q 是強力助選員，而 J (反骨仔)則可能造成負面影響。</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="modal" id="modalHistory">
+    <div class="modal-content">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h2 style="margin:0;">📜 出牌歷史紀錄</h2>
+        <button class="btn ghost" onclick="toggleModal(false)">關閉</button>
+      </div>
+      <div id="historyContent">尚無紀錄</div>
     </div>
   </div>
 
   <script>
-    // ======= 音效引擎（WebAudio，免外掛檔） =======
-    const Sound = (() => {
-      let ctx = null, master = null;
-      let enabled = true;
-
-      function ensure(){
-        if(!enabled) return null;
-        if(!ctx){
-          const AC = window.AudioContext || window.webkitAudioContext;
-          if(!AC) return null;
-          ctx = new AC();
-          master = ctx.createGain();
-          master.gain.value = 0.22; // 全域音量
-          master.connect(ctx.destination);
-        }
-        if(ctx.state === 'suspended') ctx.resume();
-        return ctx;
-      }
-
-      function tone({freq=440, type='sine', dur=0.08, vol=0.3, attack=0.005, release=0.06, when=0}={}){
-        const c = ensure(); if(!c) return;
-        const t = c.currentTime + when;
-        const osc = c.createOscillator();
-        const g = c.createGain();
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, t);
-        g.gain.setValueAtTime(0.0001, t);
-        g.gain.linearRampToValueAtTime(vol, t + attack);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + attack + dur + release);
-        osc.connect(g); g.connect(master);
-        osc.start(t); osc.stop(t + attack + dur + release + 0.03);
-      }
-
-      function noise({dur=0.25, vol=0.15, type='highpass', freq=800}={}){
-        const c = ensure(); if(!c) return;
-        const buf = c.createBuffer(1, c.sampleRate * dur, c.sampleRate);
-        const data = buf.getChannelData(0);
-        for(let i=0;i<data.length;i++) data[i] = Math.random()*2 - 1;
-        const src = c.createBufferSource(); src.buffer = buf;
-        const filt = c.createBiquadFilter(); filt.type = type; filt.frequency.value = freq;
-        const g = c.createGain(); g.gain.value = vol;
-        src.connect(filt); filt.connect(g); g.connect(master); src.start();
-      }
-
-      function click(){ tone({freq:580, type:'triangle', dur:0.06, vol:0.28}); }
-      function deselect(){ tone({freq:360, type:'triangle', dur:0.05, vol:0.22}); }
-      function whoosh(){ noise({dur:0.22, vol:0.18, type:'highpass', freq:900}); }
-      function next(){ tone({freq:520, type:'square', dur:0.08, vol:0.28}); tone({freq:660, type:'square', dur:0.08, vol:0.28, when:0.08}); }
-
-      function arpeggio(tier=1){
-        const base = [523.25, 659.25, 783.99]; // C5 E5 G5
-        const mult = tier>=3?1 : tier===2?0.85 : 0.7;
-        base.forEach((f,i)=> tone({freq:f*mult, type:'sine', dur:0.1, vol:0.36, when:i*0.07}));
-      }
-      function score(total){
-        if(total>=400) arpeggio(3);
-        else if(total>=150) arpeggio(2);
-        else arpeggio(1);
-      }
-      function victory(){
-        const seq=[523.25,659.25,783.99,1046.5];
-        seq.forEach((f,i)=> tone({freq:f, type:'square', dur:0.12, vol:0.42, when:i*0.12}));
-      }
-      function defeat(){
-        const seq=[523.25,392.0,261.63];
-        seq.forEach((f,i)=> tone({freq:f, type:'sawtooth', dur:0.12, vol:0.36, when:i*0.13}));
-      }
-      function tie(){
-        const seq=[659.25,659.25];
-        seq.forEach((f,i)=> tone({freq:f, type:'sine', dur:0.1, vol:0.3, when:i*0.1}));
-      }
-
-      return {
-        enable(v){ enabled = v; if(!v && ctx){ try{ ctx.suspend(); }catch{} } },
-        ensure, click, deselect, whoosh, next, score, victory, defeat, tie
-      };
-    })();
-
-    // ======= 彩帶（Canvas） =======
+    // ======= 彩帶引擎 (Confetti) =======
     const Confetti = (() => {
       const canvas = document.getElementById('confetti');
       const ctx = canvas.getContext('2d');
-      let w=0,h=0, active=false, parts=[], timer=0;
+      let w, h, particles = [], active = false;
       const colors = ['#ff7676','#ffd166','#06d6a0','#4cc2ff','#be79df'];
-
-      function resize(){
-        w = canvas.width = window.innerWidth;
-        h = canvas.height = window.innerHeight;
-      }
-      window.addEventListener('resize', ()=>{ if(active) resize(); });
-
-      function spawn(n=120){
-        parts = [];
-        for(let i=0;i<n;i++){
-          parts.push({
-            x: Math.random()*w,
-            y: -10 - Math.random()*h*0.3,
-            r: 4 + Math.random()*6,
-            c: colors[(Math.random()*colors.length)|0],
-            vx: -1 + Math.random()*2,
-            vy: 2 + Math.random()*2.5,
-            a: Math.random()*Math.PI*2,
-            va: -0.1 + Math.random()*0.2
+      function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
+      function create() {
+        particles = [];
+        for(let i=0; i<100; i++) {
+          particles.push({
+            x: Math.random()*w, y: Math.random()*h - h,
+            r: 4 + Math.random()*6, c: colors[Math.floor(Math.random()*colors.length)],
+            vx: -1 + Math.random()*2, vy: 2 + Math.random()*4,
+            a: Math.random()*Math.PI*2, va: -0.1 + Math.random()*0.2
           });
         }
       }
-
-      function step(){
-        if(!active) return;
+      function update() {
         ctx.clearRect(0,0,w,h);
-        parts.forEach(p=>{
+        particles.forEach(p => {
           p.x += p.vx; p.y += p.vy; p.a += p.va;
-          ctx.save();
-          ctx.translate(p.x, p.y);
-          ctx.rotate(p.a);
-          ctx.fillStyle = p.c;
-          ctx.fillRect(-p.r, -p.r, p.r*2, p.r*2*0.6);
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a);
+          ctx.fillStyle = p.c; ctx.fillRect(-p.r, -p.r, p.r*2, p.r*2*0.6);
           ctx.restore();
         });
-        parts = parts.filter(p=> p.y < h+20);
-        if(parts.length === 0){ stop(); return; }
-        requestAnimationFrame(step);
+        particles = particles.filter(p => p.y < h);
+        if(particles.length > 0 && active) requestAnimationFrame(update);
+        else canvas.style.display = 'none';
       }
-
-      function start(durationMs=2500){
-        if(active) return;
-        active = true; canvas.style.display = 'block'; resize(); spawn();
-        step();
-        clearTimeout(timer);
-        timer = setTimeout(stop, durationMs);
-      }
-      function stop(){
-        active = false; canvas.style.display = 'none'; parts = [];
-      }
-      return { start, stop };
+      return {
+        start: () => {
+          active = true; canvas.style.display = 'block'; resize(); create(); update();
+          setTimeout(() => active = false, 3000);
+        }
+      };
     })();
 
-    // ======= 遊戲常數與工具 =======
-    const SUITS = ["北部","中部","南部","東部"];
-    const SUIT_CLASS = { "北部":"s-north", "中部":"s-center", "南部":"s-south", "東部":"s-east" };
-    const RANKS = ["1","2","3","4","5","6","7","8","9","10","J","Q","K"];
-    const RANK_TO_VAL = (()=>{ const m={}; for(let i=1;i<=10;i++) m[String(i)] = i; m["J"]=11; m["Q"]=12; m["K"]=13; return m; })();
-
-    function makeDeck(){
-      const deck = [];
-      for(const s of SUITS){
-        for(const r of RANKS){
-          deck.push({ suit:s, rank:r, val:RANK_TO_VAL[r] });
-        }
+    const Sound = (() => {
+      let ctx = null, enabled = true;
+      function ensure(){ if(!enabled) return; if(!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)(); if(ctx.state === 'suspended') ctx.resume(); }
+      function playTone(freq, type, dur, vol, when=0){
+        ensure(); if(!ctx) return;
+        const osc = ctx.createOscillator(); const g = ctx.createGain();
+        osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime + when);
+        g.gain.setValueAtTime(vol, ctx.currentTime + when);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + when + dur);
+        osc.connect(g); g.connect(ctx.destination);
+        osc.start(ctx.currentTime + when); osc.stop(ctx.currentTime + when + dur);
       }
-      // 為每張卡附 uid（穩定辨識）
-      let uid = 1;
-      deck.forEach(c => c._uid = uid++);
-      return deck;
-    }
-    function shuffle(arr){
-      for(let i=arr.length-1;i>0;i--){
-        const j = Math.floor(Math.random()*(i+1));
-        [arr[i],arr[j]] = [arr[j],arr[i]];
-      }
-      return arr;
-    }
-    function drawN(pile, n){
-      const out = [];
-      for(let i=0;i<n;i++){
-        if(pile.length===0) break;
-        out.push(pile.pop());
-      }
-      return out;
-    }
-    function formatCard(c){ return `${c.suit}${c.rank}`; }
-    function formatCards(cs){ return cs.map(formatCard).join("、"); }
-
-    // ======= 計分邏輯 =======
-    function isConsecutive(vals){
-      if(vals.length !== 5) return false;
-      vals = [...vals].sort((a,b)=>a-b);
-      for(let i=0;i<4;i++) if(vals[i]+1 !== vals[i+1]) return false;
-      return true;
-    }
-
-    function patternScore(cards){
-      const n = cards.length;
-      const suitCnt = {};
-      const rankCnt = {};
-      for(const c of cards){
-        suitCnt[c.suit] = (suitCnt[c.suit]||0)+1;
-        rankCnt[c.rank] = (rankCnt[c.rank]||0)+1;
-      }
-      const cntVals = Object.values(rankCnt).sort((a,b)=>a-b);
-      const fiveSameSuit = (n===5) && Object.values(suitCnt).some(v=>v===5);
-      const threeKind = Object.values(rankCnt).some(v=>v>=3);
-      const straight = (n===5) && isConsecutive(cards.map(c=>c.val));
-      const fourKind = Object.values(rankCnt).some(v=>v===4);
-      const fullHouse = (n===5) && (cntVals[0]===2 && cntVals[1]===3 && cntVals.length===2);
-
-      if(fiveSameSuit && straight) return {score:100, name:"同花順（5 同花且連號）"};
-      if(fourKind) return {score:60, name:"四條（4 張相同號碼）"};
-      if(fullHouse) return {score:40, name:"葫蘆（3 + 2）"};
-      if(fiveSameSuit) return {score:35, name:"同花（5 張同花）"};
-      if(straight) return {score:30, name:"順子（5 連號）"};
-      if(threeKind) return {score:30, name:"三條（≥3 同花）"};
-      const pairRanks = Object.values(rankCnt).filter(v=>v>=2).length;
-      if(pairRanks >= 2) return {score:20, name:"兩對（2 + 2）"};
-      if(Object.values(rankCnt).some(v=>v>=2)) return {score:10, name:"一對"};
-      return {score:5, name:"無牌型"};
-    }
-
-    function stationScore(cards){
-      let X=0,Y=0,Z=0;
-      for(const c of cards){
-        if(c.rank==="K") X++;
-        else if(c.rank==="Q") Y++;
-        else if(c.rank==="J") Z++;
-      }
-      const score = X*3 + Y*2 - Z + 2;
-      return {score, X, Y, Z};
-    }
-
-    function totalScore(cards){
-      const p = patternScore(cards);
-      const s = stationScore(cards);
-      return { total: p.score * s.score, pattern: p.score, patternName: p.name, station: s.score, X:s.X, Y:s.Y, Z:s.Z };
-    }
-
-    function allSubsets1to5(cards){
-      const res = [];
-      const n = cards.length;
-      const pick = (start, k, acc)=>{
-        if(acc.length===k){ res.push([...acc]); return; }
-        for(let i=start;i<n;i++){
-          acc.push(cards[i]);
-          pick(i+1, k, acc);
-          acc.pop();
-        }
-      };
-      const maxK = Math.min(5, n);
-      for(let k=1;k<=maxK;k++) pick(0,k,[]);
-      return res;
-    }
-
-    function comboKey(combo){
-      const sc = totalScore(combo);
-      const lex = [...combo].sort((a,b)=> (a.suit===b.suit? a.val-b.val : a.suit.localeCompare(b.suit)))
-                            .map(c=>`${c.suit}-${c.val}`).join("|");
       return {
-        k: [-sc.total, -sc.pattern, -sc.station, combo.length, lex],
-        sc
+        enable: (v) => enabled = v,
+        click: () => playTone(600, 'sine', 0.1, 0.2),
+        play: () => playTone(400, 'triangle', 0.2, 0.3),
+        score: () => { playTone(523, 'sine', 0.1, 0.2); playTone(659, 'sine', 0.1, 0.2, 0.1); }
       };
-    }
-    function bestCombos(cards, topN=3){
-      const subs = allSubsets1to5(cards);
-      const withKey = subs.map(c=>({ combo:c, ...comboKey(c) }));
-      withKey.sort((a,b)=>{
-        for(let i=0;i<a.k.length;i++){
-          if(a.k[i]<b.k[i]) return -1;
-          if(a.k[i]>b.k[i]) return 1;
-        }
-        return 0;
-      });
-      return withKey.slice(0, topN);
-    }
+    })();
 
-    // ======= 狀態與 UI =======
-    const state = {
-      round: 1,
-      human: { draw:[], hand:[], discard:[], total:0, log:[] },
-      ai:    { draw:[], hand:[], discard:[], total:0, log:[] },
-      locked: false,
-      settings: {
-        sound: true,
-        anim: !window.matchMedia || !matchMedia('(prefers-reduced-motion: reduce)').matches
-      }
+    const SUITS = ["北部","中部","南部","東部"];
+    const RANKS = ["1","2","3","4","5","6","7","8","9","10","J","Q","K"];
+    const RANK_VAL = (r) => (r === "J" ? 11 : r === "Q" ? 12 : r === "K" ? 13 : parseInt(r));
+    
+    let state = {
+      round: 1, human: { hand:[], draw:[], total:0, log:[] }, ai: { hand:[], draw:[], total:0, log:[], nextMove: [] },
+      settings: { sound: true, anim: true }, locked: false
     };
 
-    // 自動前進顯示停留毫秒
-    const AUTO_ADVANCE_MS = 1200;
-
-    // ======= 元素 =======
-    const $hand = document.getElementById("hand");
-    const $roundNo = document.getElementById("roundNo");
-    const $roundNo2 = document.getElementById("roundNo2");
-    const $humanDeckLeft = document.getElementById("humanDeckLeft");
-    const $aiDeckLeft    = document.getElementById("aiDeckLeft");
-    const $humanTotal = document.getElementById("humanTotal");
-    const $aiTotal = document.getElementById("aiTotal");
-    const $btnPlay = document.getElementById("btnPlay");
-    const $btnClear = document.getElementById("btnClear");
-    const $btnSuggest = document.getElementById("btnSuggest");
-    const $btnRestart = document.getElementById("btnRestart");
-    const $selHint = document.getElementById("selHint");
-    const $btnSound = document.getElementById("btnSound");
-    const $btnAnim = document.getElementById("btnAnim");
-
-    const $estPattern = document.getElementById("estPattern");
-    const $estPatternName = document.getElementById("estPatternName");
-    const $estStation = document.getElementById("estStation");
-    const $estTotal = document.getElementById("estTotal");
-    const $estNote = document.getElementById("estNote");
-    const $estX = document.getElementById("estX");
-    const $estY = document.getElementById("estY");
-    const $estZ = document.getElementById("estZ");
-
-    const $roundResult = document.getElementById("roundResult");
-
-    // ======= 工具：數字平滑滾動 =======
-    function animateNumber(el, from, to, ms=500){
-      if(from === to){ el.textContent = String(to); return; }
-      const start = performance.now();
-      function step(t){
-        const k = Math.min(1, (t - start)/ms);
-        const eased = 1 - Math.pow(1-k, 3); // easeOutCubic
-        const val = Math.round(from + (to - from)*eased);
-        el.textContent = String(val);
-        if(k < 1) requestAnimationFrame(step);
-      }
-      requestAnimationFrame(step);
+    function makeDeck() {
+      let d = [];
+      SUITS.forEach(s => RANKS.forEach(r => d.push({suit:s, rank:r, val:RANK_VAL(r), id: Math.random()})));
+      return d.sort(() => Math.random() - 0.5);
     }
 
-    // ======= UI：渲染手牌 =======
-    function suitClass(s){ return { "北部":"s-north","中部":"s-center","南部":"s-south","東部":"s-east" }[s] || ""; }
+    function patternScore(cards) {
+      const n = cards.length;
+      const rankCnt = {}; cards.forEach(c => rankCnt[c.rank] = (rankCnt[c.rank]||0)+1);
+      const suitCnt = {}; cards.forEach(c => suitCnt[c.suit] = (suitCnt[c.suit]||0)+1);
+      const vals = Object.values(rankCnt);
+      if (n === 5) {
+        const sorted = cards.map(c=>c.val).sort((a,b)=>a-b);
+        const isStraight = sorted.every((v,i,a) => i===0 || v === a[i-1]+1);
+        const isFlush = Object.values(suitCnt).some(v=>v===5);
+        if (isStraight && isFlush) return {val:100, name:"同花順"};
+        if (isFlush) return {val:35, name:"同花"};
+        if (isStraight) return {val:30, name:"順子"};
+      }
+      if (vals.includes(4)) return {val:60, name:"四條"};
+      if (vals.includes(3) && vals.includes(2)) return {val:40, name:"葫蘆"};
+      if (vals.includes(3)) return {val:30, name:"三條"};
+      if (vals.filter(v=>v>=2).length >= 2) return {val:20, name:"兩對"};
+      if (vals.includes(2)) return {val:10, name:"一對"};
+      return {val:5, name:"無牌型"};
+    }
 
-    function renderHand(){
-      $hand.innerHTML = "";
-      state.human.hand.forEach((c, idx)=>{
-        const card = document.createElement("div");
-        card.className = "card";
-        card.dataset.index = String(idx);
-        const tag = document.createElement("div");
-        tag.className = `tag ${suitClass(c.suit)}`;
-        tag.textContent = c.suit;
-        const rank = document.createElement("div");
-        rank.className = "rank";
-        rank.textContent = c.rank;
-        const suit = document.createElement("div");
-        suit.className = "suit";
-        suit.textContent = `值：${c.val}`;
-        card.appendChild(tag);
-        card.appendChild(rank);
-        card.appendChild(suit);
-        card.addEventListener("click", ()=>{
-          if(state.locked) return;
-          // 音效
-          if(state.settings.sound){
-            if(!card.classList.contains('sel')) Sound.click(); else Sound.deselect();
-            Sound.ensure();
-          }
-          card.classList.toggle("sel");
-          const selected = getSelectedCards();
-          if(selected.length > 5){
-            card.classList.remove("sel");
-          }
-          updateEstimate();
-        });
-        $hand.appendChild(card);
+    function stationScore(cards) {
+      let X=0, Y=0, Z=0;
+      cards.forEach(c => { if(c.rank==="K") X++; if(c.rank==="Q") Y++; if(c.rank==="J") Z++; });
+      return { val: X*3 + Y*2 - Z + 2, X, Y, Z };
+    }
+
+    function getFullScore(cards) {
+      if (!cards.length) return {total:0, pName:"—", sVal:0, X:0, Y:0, Z:0, pVal:0};
+      const p = patternScore(cards); const s = stationScore(cards);
+      return { total: p.val * s.val, pName: p.name, sVal: s.val, X: s.X, Y: s.Y, Z: s.Z, pVal: p.val };
+    }
+
+function calculateAiNextMove() {
+  const hand = state.ai.hand;
+  const n = hand.length;
+  let bestByTotal = { cards: [hand[0]], sc: getFullScore([hand[0]]) };
+  let bestByTotalNoQK = { cards: [], sc: { total: -1, pVal: 0 } };
+  let bestByTotalNoJQK = { cards: [], sc: { total: -1, pVal: 0 } };
+  let bestPatternVal = 0;
+
+  for (let i = 1; i < (1 << n); i++) {
+    let sub = [];
+    for (let j = 0; j < n; j++) if ((i >> j) & 1) sub.push(hand[j]);
+    if (sub.length === 0 || sub.length > 5) continue;
+
+    const sc = getFullScore(sub);
+    if (sc.pVal > bestPatternVal) bestPatternVal = sc.pVal; // 全域最佳牌型分數
+    if (sc.total > bestByTotal.sc.total) bestByTotal = { cards: sub, sc }; // 總分最佳
+
+    const hasQK = sub.some(c => c.rank === 'Q' || c.rank === 'K');
+    if (!hasQK && sc.total > bestByTotalNoQK.sc.total) {
+      bestByTotalNoQK = { cards: sub, sc };
+    }
+
+    const hasJQK = sub.some(c => c.rank === 'J' || c.rank === 'Q' || c.rank === 'K');
+    if (!hasJQK && sc.total > bestByTotalNoJQK.sc.total) {
+      bestByTotalNoJQK = { cards: sub, sc };
+    }
+  }
+
+
+
+
+
+
+
+
+
+  // 規則 B：1-6輪最佳牌型分數 <= 10 ⇒ 出牌不得含 Q/K，且必須包含所有 J；
+  // 目標為出到 5 張（若非 Q/K 總數不足 5，則盡量出到最多張，仍不包含 Q/K）。
+  if (state.round <= 6 && bestPatternVal <= 10) {
+    const isQK = c => (c.rank === 'Q' || c.rank === 'K');
+    const Js = hand.filter(c => c.rank === 'J');
+    const othersNoQK = hand.filter(c => c.rank !== 'J' && !isQK(c)).sort((a,b)=>a.val-b.val);
+
+    let pick = [...Js];
+    for (const c of othersNoQK) { if (pick.length >= 5) break; if (!pick.includes(c)) pick.push(c); }
+
+    state.ai.nextMove = pick.slice(0, 5);
+    return;
+  }
+
+  // 規則 A（新版）：前三輪且最佳牌型分數 < 80 ⇒ 不含 J/Q/K 的最佳，並補牌至 5 張（若可）。
+  if (state.round <= 3 && bestPatternVal < 80 && bestByTotalNoJQK.cards.length > 0) {
+    const isJQK = c => (c.rank === 'J' || c.rank === 'Q' || c.rank === 'K');
+    let pick = [...bestByTotalNoJQK.cards];
+
+    // 用手上其他非 J/Q/K 牌補到 5 張（依點數由小到大）
+    const poolNoJQK = hand.filter(c => !isJQK(c)).sort((a,b)=>a.val-b.val);
+    for (const c of poolNoJQK) { if (pick.length >= 5) break; if (!pick.includes(c)) pick.push(c); }
+
+    state.ai.nextMove = pick.slice(0, Math.min(5, poolNoJQK.length));
+    return;
+  }
+
+
+
+ // 其他情況 ⇒ 維持總分最佳
+  state.ai.nextMove = bestByTotal.cards;
+}
+
+    function toggleModal(show) { document.getElementById('modalHistory').classList.toggle('active', show); }
+    function toggleHowTo(show) { document.getElementById('modalHowToPlay').classList.toggle('active', show); }
+
+    function updateHistory() {
+      const content = document.getElementById('historyContent');
+      if (state.human.log.length === 0) { content.innerHTML = "尚無紀錄"; return; }
+      content.innerHTML = state.human.log.map((h, i) => {
+        const a = state.ai.log[i];
+        return `<div style="border-bottom:1px solid #2b3a4d; padding:12px 0;"><div style="color:var(--accent); font-weight:bold;">第 ${i+1} 輪</div><div style="margin-top:4px;">🧑 人類：${h.cards.map(c=>c.suit+c.rank).join(',')} (${h.sc.pName}, ${h.sc.total}分)</div><div>🤖 AI：${a.cards.map(c=>c.suit+c.rank).join(',')} (${a.sc.pName}, ${a.sc.total}分)</div></div>`;
+      }).join('');
+    }
+
+    // ======= 修正：加入從小到大排序邏輯 =======
+    function renderHand() {
+      // 依 val 分數排序
+      state.human.hand.sort((a, b) => a.val - b.val);
+      
+      const hDiv = document.getElementById('hand'); hDiv.innerHTML = "";
+      state.human.hand.forEach((c, i) => {
+        const card = document.createElement('div'); card.className = "card";
+        card.dataset.id = c.id; // 改用 id 識別而非 index
+        card.innerHTML = `<div class="tag ${getSuitClass(c.suit)}">${c.suit}</div><div class="rank">${c.rank}</div>`;
+        card.onclick = () => { if(state.locked) return; if(state.settings.sound) Sound.click(); if(!card.classList.contains('sel') && document.querySelectorAll('#hand .card.sel').length >= 5) return; card.classList.toggle('sel'); updateEstimate(); };
+        hDiv.appendChild(card);
       });
-      updateEstimate();
+      renderAi();
     }
 
-    function getSelectedCards(){
-      const idxs = [...$hand.querySelectorAll(".card.sel")].map(el=> Number(el.dataset.index));
-      return idxs.map(i=> state.human.hand[i]);
+    function renderAi() {
+      // AI 牌組也排序
+      state.ai.hand.sort((a, b) => a.val - b.val);
+      
+      const aiDiv = document.getElementById('aiHandDisplay'); aiDiv.innerHTML = "";
+      state.ai.hand.forEach(c => {
+        const card = document.createElement('div'); card.className = "card"; card.style.cursor = "default";
+        const isSelectedByAi = state.ai.nextMove.some(m => m.id === c.id);
+        if(isSelectedByAi) card.classList.add("sel");
+        card.innerHTML = `<div class="tag ${getSuitClass(c.suit)}">${c.suit}</div><div class="rank">${c.rank}</div>`;
+        aiDiv.appendChild(card);
+      });
     }
 
-    function clearSelection(){
-      $hand.querySelectorAll(".card.sel").forEach(el=> el.classList.remove("sel"));
-      updateEstimate();
+    function updateEstimate() {
+      const sel = Array.from(document.querySelectorAll('#hand .card.sel')).map(el => {
+        const cardId = parseFloat(el.dataset.id);
+        return state.human.hand.find(c => c.id === cardId);
+      });
+      const sc = getFullScore(sel);
+      document.getElementById('estPattern').textContent = sc.pVal || "—";
+      document.getElementById('estPatternName').textContent = sc.pName;
+      document.getElementById('estStation').textContent = sc.sVal || "—";
+      document.getElementById('estStationPills').innerHTML = `<span class="pill">K:${sc.X}</span><span class="pill">Q:${sc.Y}</span><span class="pill">J:${sc.Z}</span>`;
+      document.getElementById('estTotal').textContent = sc.total || "—";
+      document.getElementById('selHint').textContent = sel.length ? `已選 ${sel.length} 張` : "尚未選牌";
+      document.getElementById('btnPlay').disabled = (sel.length === 0 || state.locked);
     }
 
-    // ======= UI：預估分數 =======
-    function updateEstimate(){
-      const sel = getSelectedCards();
-      const n = sel.length;
-      $btnPlay.disabled = state.locked || n===0;
-      $selHint.textContent = n===0 ? "尚未選牌" : `已選 ${n} 張`;
-      if(n===0){
-        $estPattern.textContent = "—";
-        $estPatternName.textContent = "—";
-        $estStation.textContent = "—";
-        $estTotal.textContent = "—";
-        $estNote.textContent = "請選 1–5 張作為本輪「開票牌」";
-        $estX.textContent = "K:0";
-        $estY.textContent = "Q:0";
-        $estZ.textContent = "J:0";
-        return;
-      }
-      const sc = totalScore(sel);
-      $estPattern.textContent = sc.pattern;
-      $estPatternName.textContent = sc.patternName;
-      $estStation.textContent = sc.station;
-      $estTotal.textContent = sc.total;
-      $estNote.textContent = `總分 = 牌型 ${sc.pattern} × 站台 ${sc.station}`;
-      $estX.textContent = `K:${sc.X}`;
-      $estY.textContent = `Q:${sc.Y}`;
-      $estZ.textContent = `J:${sc.Z}`;
-    }
-
-    // ======= 遊戲流程 =======
-    function initGame(){
-      state.round = 1;
-      state.locked = false;
-      state.human = { draw:shuffle(makeDeck()), hand:[], discard:[], total:0, log:[] };
-      state.ai    = { draw:shuffle(makeDeck()), hand:[], discard:[], total:0, log:[] };
-      // 起始各抽 7
-      state.human.hand.push(...drawN(state.human.draw, 7));
-      state.ai.hand.push(...drawN(state.ai.draw, 7));
-      renderAll();
-      renderResultPlaceholder();
-    }
-
-    function renderAll(){
-      $roundNo.textContent = state.round;
-      $roundNo2.textContent = state.round;
-      $humanDeckLeft.textContent = state.human.draw.length;
-      $aiDeckLeft.textContent = state.ai.draw.length;
-      // 累積分數平滑滾動
-      animateNumber($humanTotal, Number($humanTotal.textContent||0), state.human.total, 400);
-      animateNumber($aiTotal, Number($aiTotal.textContent||0), state.ai.total, 400);
-      renderHand();
-    }
-
-    function renderResultPlaceholder(){
-      $roundResult.classList.remove('show');
-      $roundResult.innerHTML = `
-        <h3>尚未出牌</h3>
-        <div class="hint">出牌後會顯示你與 AI 的本輪組合與分數。</div>
-      `;
-      setTimeout(()=> $roundResult.classList.add('show'), 15);
-    }
-
-    function removeFromHand(hand, cards){
-      for(const c of cards){
-        const idx = hand.indexOf(c);
-        if(idx>=0) hand.splice(idx,1);
-      }
-    }
-
-    function showRoundResult(hCombo, hSc, aCombo, aSc){
-      const block = (title, combo, sc) => `
-        <div class="box">
-          <div class="lab">${title}</div>
-          <div class="val mono">${formatCards(combo)}</div>
-          <div class="small">總分 <b>${sc.total}</b>（牌型 ${sc.pattern} × 站台 ${sc.station}）</div>
-        </div>`;
-      $roundResult.classList.remove('show');
-      $roundResult.innerHTML = `
-        <h3>第 ${state.round} 輪結果</h3>
-        <div class="meta" style="margin-top:6px;">
-          ${block("🧑 人類開票牌", hCombo, hSc)}
-          ${block("🤖 AI 開票牌", aCombo, aSc)}
-        </div>
-      `;
-      setTimeout(()=> $roundResult.classList.add('show'), 15);
-    }
-
-    function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
-
-    async function doPlay(){
-      if(state.locked) return;
-      const sel = getSelectedCards();
-      if(sel.length===0 || sel.length>5) return;
-
-      // 出牌音效與飛出動畫
-      if(state.settings.sound){ Sound.ensure(); Sound.whoosh(); }
-      const selEls = [...$hand.querySelectorAll(".card.sel")];
-      if(state.settings.anim){
-        selEls.forEach(el=> el.classList.add("play-anim"));
-        await sleep(320);
-      }
-
-      // 人類計分
-      const humanCombo = sel.slice();
-      const hSc = totalScore(humanCombo);
-      state.human.total += hSc.total;
-      removeFromHand(state.human.hand, humanCombo);
-      state.human.discard.push(...humanCombo);
-      state.human.hand.push(...drawN(state.human.draw, humanCombo.length));
-      state.human.log.push({ round: state.round, combo: humanCombo, score: hSc });
-
-      // AI 出牌（最佳）
-      const aiBest = bestCombos(state.ai.hand, 1)[0];
-      const aiCombo = aiBest ? aiBest.combo : [state.ai.hand[0]];
-      const aSc = totalScore(aiCombo);
-      state.ai.total += aSc.total;
-      removeFromHand(state.ai.hand, aiCombo);
-      state.ai.discard.push(...aiCombo);
-      state.ai.hand.push(...drawN(state.ai.draw, aiCombo.length));
-      state.ai.log.push({ round: state.round, combo: aiCombo, score: aSc });
-
-      // 結算音效（依分數強度）
-      if(state.settings.sound){ Sound.score(hSc.total); }
-
-      // 顯示本輪結果
-      showRoundResult(humanCombo, hSc, aiCombo, aSc);
-
-      // 更新面板
+    async function play() {
+      if (state.locked) return;
       state.locked = true;
-      $btnPlay.disabled = true;
-      renderAll();
-
-      // ✅ 自動進入下一輪（保留時間供結果展示與音效/動畫）
+      const selEls = document.querySelectorAll('#hand .card.sel');
+      const hCards = Array.from(selEls).map(el => {
+          const cardId = parseFloat(el.dataset.id);
+          return state.human.hand.find(c => c.id === cardId);
+      });
+      const aCards = state.ai.nextMove;
+      
+      if(state.settings.sound) Sound.play();
+      if(state.settings.anim) {
+        requestAnimationFrame(() => { selEls.forEach(el => el.classList.add('play-anim')); });
+        await new Promise(r => setTimeout(r, 650)); 
+      }
+      
+      const hSc = getFullScore(hCards); const aSc = getFullScore(aCards);
+      state.human.total += hSc.total; state.ai.total += aSc.total;
+      state.human.log.push({cards: hCards, sc: hSc}); state.ai.log.push({cards: aCards, sc: aSc});
+      document.getElementById('roundResult').innerHTML = `🧑打出：${hCards.map(c=>c.suit+c.rank).join(',')} (${hSc.total}分)<br>🤖打出：${aCards.map(c=>c.suit+c.rank).join(',')} (${aSc.total}分)`;
+      
+      state.human.hand = state.human.hand.filter(c => !hCards.includes(c)).concat(drawN(state.human.draw, hCards.length));
+      state.ai.hand = state.ai.hand.filter(c => !aCards.includes(c)).concat(drawN(state.ai.draw, aCards.length));
+      
       setTimeout(() => {
-        if (state.round >= 7) {
-          endGame();
-        } else {
-          if (state.settings.sound) Sound.next();
-          state.round++;
-          state.locked = false;
-          renderResultPlaceholder();
-          renderAll();
-          clearSelection();
+        if(state.settings.sound) Sound.score();
+        document.getElementById('humanTotal').textContent = state.human.total;
+        document.getElementById('aiTotal').textContent = state.ai.total;
+        if(state.round < 7) { 
+          state.round++; state.locked = false; 
+          document.getElementById('roundNo').textContent = state.round; 
+          document.getElementById('roundResult').innerHTML = "等待雙方出牌...";
+          calculateAiNextMove();
+          renderHand(); updateEstimate(); 
+        } else { 
+          const winnerText = state.human.total >= state.ai.total ? "恭喜凍蒜！" : "很遺憾 AI 同路人贏得這次大選!";
+          setTimeout(() => {
+            alert(`遊戲結束！${winnerText}\n您的總分：${state.human.total}\nAI 同路人總分：${state.ai.total}`); 
+            initGame(); 
+          }, 1000);
         }
-      }, AUTO_ADVANCE_MS);
+      }, 500);
     }
 
-    function endGame(){
-      const lines = [];
-      for(const who of ["human","ai"]){
-        const name = (who==="human") ? "人類" : "AI";
-        const logs = state[who].log;
-        const sum = state[who].total;
-        const items = logs.map(l =>
-          `R${l.round}：${formatCards(l.combo)} → 總 ${l.score.total}（牌型 ${l.score.pattern} × 站台 ${l.score.station}）`
-        ).join("<br>");
-        lines.push(`<div class="box"><div class="lab">${name}</div><div class="val mono" style="line-height:1.7">${items || "—"}</div><div class="small" style="margin-top:6px;">${name} 總分：<b>${sum}</b></div></div>`);
-      }
-      const humanWin = state.human.total > state.ai.total;
-      const aiWin = state.ai.total > state.human.total;
-      const verdict = humanWin ? "🎉 恭喜，人類獲勝！" : aiWin ? "🤖 本次由 AI 取勝！" : "🤝 平手！";
-      $roundResult.classList.remove('show');
-      $roundResult.innerHTML = `
-        <h3>對局結束</h3>
-        <div class="meta" style="margin-top:6px;">${lines.join("")}</div>
-        <div class="divider" style="margin:12px 0;"></div>
-        <div style="font-weight:800;">${verdict}</div>
-      `;
-      setTimeout(()=> $roundResult.classList.add('show'), 15);
-      state.locked = true;
-
-      // 收尾音效 & 彩帶
-      if(state.settings.sound){
-        if(humanWin) Sound.victory();
-        else if(aiWin) Sound.defeat();
-        else Sound.tie();
-      }
-      if(state.settings.anim && humanWin){ Confetti.start(2800); }
-    }
-
-    // ======= 事件 =======
-    $btnPlay.addEventListener("click", doPlay);
-    $btnClear.addEventListener("click", clearSelection);
-    $btnRestart.addEventListener("click", ()=>{ Confetti.stop(); initGame(); });
-
-    $btnSuggest.addEventListener("click", ()=>{
-      if(state.locked) return;
-      const best = bestCombos(state.human.hand, 1)[0];
-      if(!best){ return; }
-      clearSelection();
-      const need = new Set(best.combo.map(c => c._uid));
-      $hand.querySelectorAll(".card").forEach((el)=>{
-        const idx = Number(el.dataset.index);
-        const c = state.human.hand[idx];
-        if(need.has(c._uid)) el.classList.add("sel");
-      });
-      if(state.settings.sound){ Sound.click(); Sound.ensure(); }
+    function initGame() {
+      state.round = 1;
+      state.human = { hand:[], draw:makeDeck(), total:0, log:[] };
+      state.ai = { hand:[], draw:makeDeck(), total:0, log:[], nextMove: [] };
+      state.ai.draw = makeDeck();
+      state.human.hand = drawN(state.human.draw, 7);
+      state.ai.hand = drawN(state.ai.draw, 7);
+      state.locked = false;
+      document.getElementById('humanTotal').textContent = "0";
+      document.getElementById('aiTotal').textContent = "0";
+      document.getElementById('roundNo').textContent = "1";
+      document.getElementById('roundResult').innerHTML = "等待雙方出牌...";
+      
+      calculateAiNextMove();
+      renderHand();
       updateEstimate();
-    });
-
-    // 音效/動畫 開關
-    function renderToggles(){
-      $btnSound.textContent = (state.settings.sound ? "🔈 音效：開" : "🔇 音效：關");
-      $btnAnim.textContent = (state.settings.anim ? "🎞️ 動畫：開" : "🖼️ 動畫：關");
-      // 停用動畫就移除動畫 class 影響
-      if(!state.settings.anim){
-        document.querySelectorAll('.card.sel').forEach(el=> el.style.animation = 'none');
-      }else{
-        document.querySelectorAll('.card.sel').forEach(el=> el.style.animation = '');
-      }
+      if(state.settings.anim) Confetti.start();
     }
-    $btnSound.addEventListener('click', ()=>{
-      state.settings.sound = !state.settings.sound; Sound.enable(state.settings.sound);
-      renderToggles();
-    });
-    $btnAnim.addEventListener('click', ()=>{
-      state.settings.anim = !state.settings.anim;
-      if(!state.settings.anim) Confetti.stop();
-      renderToggles();
-    });
 
-    // 在任意首次互動嘗試啟動 AudioContext（避免瀏覽器靜音策略）
-    ['click','keydown','touchstart'].forEach(ev=>{
-      window.addEventListener(ev, ()=> Sound.ensure(), { once:true, passive:true });
-    });
+    function getSuitClass(s) { return {"北部":"s-north","中部":"s-center","南部":"s-south","東部":"s-east"}[s]; }
+    function drawN(p, n) { return p.splice(0, n); }
 
-    // ======= 啟動 =======
-    renderToggles();
-    initGame();
+    document.getElementById('btnHowToPlay').onclick = () => toggleHowTo(true);
+    document.getElementById('btnPlay').onclick = play;
+    document.getElementById('btnSound').onclick = function(){ state.settings.sound = !state.settings.sound; this.textContent = state.settings.sound ? "🔈 音效：開" : "🔇 音效：關"; };
+    document.getElementById('btnAnim').onclick = function(){ state.settings.anim = !state.settings.anim; this.textContent = state.settings.anim ? "🎞️ 動畫：開" : "🖼️ 動畫：關"; };
+    document.getElementById('btnToggleAi').onclick = () => document.getElementById('aiSection').classList.toggle('hidden');
+    document.getElementById('btnHistory').onclick = () => { updateHistory(); toggleModal(true); };
+    document.getElementById('btnSuggest').onclick = () => {
+        let best = { cards:[], sc: {total: -1} };
+        const n = state.human.hand.length;
+        for(let i=1; i<(1<<n); i++) {
+            let sub = []; for(let j=0; j<n; j++) if((i>>j)&1) sub.push(state.human.hand[j]);
+            if(sub.length > 5) continue;
+            let sc = getFullScore(sub); if(sc.total > best.sc.total) best = {cards:sub, sc};
+        }
+        document.querySelectorAll('#hand .card').forEach((el, i) => {
+            const cardId = parseFloat(el.dataset.id);
+            const cardObj = state.human.hand.find(c => c.id === cardId);
+            el.classList.toggle('sel', best.cards.includes(cardObj));
+        });
+        updateEstimate();
+    };
+
+    window.onload = initGame;
   </script>
 </body>
 </html>
