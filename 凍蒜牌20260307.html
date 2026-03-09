@@ -279,7 +279,7 @@
     }
 
 function calculateAiNextMove() {
-  // === 新規則：前四輪除非總分>200，AI 不出 Q 或 K ===
+  // === 新規則：前四輪除非總分>100，AI 不出 Q 或 K ===
   const earlyRound = state.round <= 4;
   function containsQorK(cards){
     return cards.some(c => c.rank === "Q" || c.rank === "K");
@@ -294,9 +294,9 @@ function calculateAiNextMove() {
     for(let j=0; j<n; j++) if((i>>j)&1) sub.push(state.ai.hand[j]);
     if(sub.length > 5) continue;
 
-    // 應用前四輪的 Q/K 限制：若總分<=200且含Q或K，跳過該組合
+    // 應用前四輪的 Q/K 限制：若總分<=100且含Q或K，跳過該組合
     const sc = getFullScore(sub);
-    if(earlyRound && sc.total <= 200 && containsQorK(sub)) continue;
+    if(earlyRound && sc.total <= 100 && containsQorK(sub)) continue;
 
     if(sc.total > best.sc.total) best = {cards: sub, sc};
   }
