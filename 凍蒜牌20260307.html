@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="zh-Hant">
 <head>
@@ -277,27 +278,57 @@
       return { total: p.val * s.val, pName: p.name, sVal: s.val, X: s.X, Y: s.Y, Z: s.Z, pVal: p.val };
     }
 
-    function calculateAiNextMove() {
-      let best = { cards:[state.ai.hand[0]], sc: getFullScore([state.ai.hand[0]]) };
-      const n = state.ai.hand.length;
-      for(let i=1; i<(1<<n); i++) {
-        let sub = []; for(let j=0; j<n; j++) if((i>>j)&1) sub.push(state.ai.hand[j]);
-        if(sub.length > 5) continue;
-        let sc = getFullScore(sub); if(sc.total > best.sc.total) best = {cards:sub, sc};
-      }
-      if(best.sc.total <= 5) {
-        let suitGroups = {}; SUITS.forEach(s => suitGroups[s] = state.ai.hand.filter(c=>c.suit===s));
-        let targetSuit = SUITS.filter(s=>suitGroups[s].length>0).sort((a,b)=>suitGroups[a].length - suitGroups[b].length)[0];
-        let move = suitGroups[targetSuit].slice(0,2);
-        if(move.length < 2) {
-            let other = state.ai.hand.find(c => !move.includes(c));
-            if(other) move.push(other);
+function calculateAiNextMove() {
+  // === 新規則：前四輪除非總分>200，AI 不出 Q 或 K ===
+  const earlyRound = state.round <= 4;
+  function containsQorK(cards){
+    return cards.some(c => c.rank === "Q" || c.rank === "K");
+  }
+
+  let best = { cards:[state.ai.hand[0]], sc: getFullScore([state.ai.hand[0]]) };
+  const n = state.ai.hand.length;
+
+  // 探索所有子集合（最多 5 張）
+  for(let i=1; i<(1<<n); i++) {
+    let sub = [];
+    for(let j=0; j<n; j++) if((i>>j)&1) sub.push(state.ai.hand[j]);
+    if(sub.length > 5) continue;
+
+    // 應用前四輪的 Q/K 限制：若總分<=200且含Q或K，跳過該組合
+    const sc = getFullScore(sub);
+    if(earlyRound && sc.total <= 200 && containsQorK(sub)) continue;
+
+    if(sc.total > best.sc.total) best = {cards: sub, sc};
+  }
+
+  // 若最佳分數仍非常低，使用原本的保守策略，但也遵守 Q/K 限制
+  if(best.sc.total <= 5) {
+    let suitGroups = {}; SUITS.forEach(s => suitGroups[s] = state.ai.hand.filter(c=>c.suit===s));
+    let targetSuit = SUITS.filter(s=>suitGroups[s].length>0).sort((a,b)=>suitGroups[a].length - suitGroups[b].length)[0];
+    let move = suitGroups[targetSuit].slice(0,2);
+
+    if(move.length < 2) {
+      // 優先選不含 Q/K 的其他牌
+      let other = state.ai.hand.find(c => !move.includes(c) && !(earlyRound && (c.rank==="Q"||c.rank==="K")));
+      if(!other) other = state.ai.hand.find(c => !move.includes(c));
+      if(other) move.push(other);
+    }
+
+    // 若仍包含 Q/K 且是前四輪，嘗試替換
+    if(earlyRound && containsQorK(move)) {
+      for(let idx=0; idx<move.length; idx++){
+        if(move[idx].rank==="Q"||move[idx].rank==="K"){
+          const replacement = state.ai.hand.find(c=>!move.includes(c) && c.rank!=="Q" && c.rank!=="K");
+          if(replacement){ move[idx] = replacement; }
         }
-        state.ai.nextMove = move;
-      } else {
-        state.ai.nextMove = best.cards;
       }
     }
+
+    state.ai.nextMove = move;
+  } else {
+    state.ai.nextMove = best.cards;
+  }
+}
 
     function toggleModal(show) { document.getElementById('modalHistory').classList.toggle('active', show); }
     function toggleHowTo(show) { document.getElementById('modalHowToPlay').classList.toggle('active', show); }
