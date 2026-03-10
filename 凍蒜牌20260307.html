@@ -324,8 +324,8 @@ function calculateAiNextMove() {
 	}
 
 
-  // 規則 ：1-3輪且最佳牌型分數 < 80 ⇒ 不含 J/Q/K 的最佳，並補牌至 5 張（若可）。
-  if (state.round <= 3 && bestPatternVal < 80 && bestByTotalNoJQK.cards.length > 0) {
+  // 規則 ：1-3輪且最佳牌型分數 < 30 ⇒ 不含 J/Q/K 的最佳，並補牌至 5 張（若可）。
+  if (state.round <= 3 && bestPatternVal < 30 && bestByTotalNoJQK.cards.length > 0) {
     const isJQK = c => (c.rank === 'J' || c.rank === 'Q' || c.rank === 'K');
     let pick = [...bestByTotalNoJQK.cards];
 
