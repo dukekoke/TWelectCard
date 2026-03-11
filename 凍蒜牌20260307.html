@@ -421,9 +421,9 @@ function calculateAiNextMove() {
           calculateAiNextMove();
           renderHand(); updateEstimate(); 
         } else { 
-          const winnerText = state.human.total >= state.ai.total ? "恭喜凍蒜！" : "很遺憾 AI 同路人贏得這次大選!";
+          const winnerText = state.human.total > state.ai.total ? "恭喜凍蒜！" : "很遺憾 AI 同路人獲勝!";
           setTimeout(() => {
-            alert(`遊戲結束！${winnerText}\n您的總分：${state.human.total}\nAI 同路人總分：${state.ai.total}`); 
+            alert(`開票結果！${winnerText}\n您的總分：${state.human.total}\nAI 同路人總分：${state.ai.total}`); 
             initGame(); 
           }, 1000);
         }
