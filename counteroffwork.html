@@ -15,6 +15,10 @@
       font-size: 3em;
       margin-bottom: 20px;
     }
+    #clock {
+      font-size: 2em;
+      margin-bottom: 20px;
+    }
     #countdown {
       font-size: 2.5em;
       font-weight: bold;
@@ -57,6 +61,9 @@
 <body>
   <h1>下班倒數計時器</h1>
 
+  <!-- 即時時鐘 -->
+  <div id="clock">現在時間載入中...</div>
+
   <div class="input-area">
     <label for="offWorkTime">設定下班時間：</label>
     <input type="time" id="offWorkTime" value="18:00">
@@ -75,6 +82,7 @@
     let offWorkHour = 18;
     let offWorkMinute = 0;
 
+    // 更新下班時間
     function setOffWorkTime() {
       const timeInput = document.getElementById("offWorkTime").value;
       if (timeInput) {
@@ -84,6 +92,7 @@
       }
     }
 
+    // 倒數計時
     function updateCountdown() {
       const now = new Date();
       const offWork = new Date();
@@ -103,7 +112,22 @@
         `${hours} 小時 ${minutes} 分鐘 ${seconds} 秒`;
     }
 
-    setInterval(updateCountdown, 1000);
+    // 即時時鐘
+    function updateClock() {
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, "0");
+      const m = String(now.getMinutes()).padStart(2, "0");
+      const s = String(now.getSeconds()).padStart(2, "0");
+      document.getElementById("clock").textContent = `現在時間：${h}:${m}:${s}`;
+    }
+
+    // 每秒更新時鐘與倒數
+    setInterval(() => {
+      updateClock();
+      updateCountdown();
+    }, 1000);
+
+    updateClock();
     updateCountdown();
 
     // 天氣 API (OpenWeatherMap)
@@ -113,4 +137,38 @@
       fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&lang=zh_tw&units=metric`)
         .then(response => response.json())
         .then(data => {
-          const weatherDesc = data
+          const weatherDesc = data.weather[0].description;
+          const temp = data.main.temp;
+          const city = data.name;
+          document.getElementById("weather").textContent =
+            `${city}：${weatherDesc}，${temp}°C`;
+        })
+        .catch(() => {
+          document.getElementById("weather").textContent = "無法取得天氣資料";
+        });
+    }
+
+    // 使用瀏覽器定位
+    function initWeather() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          position => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            fetchWeather(lat, lon);
+            // 每分鐘自動更新一次
+            setInterval(() => fetchWeather(lat, lon), 60000);
+          },
+          () => {
+            document.getElementById("weather").textContent = "定位失敗，請允許位置存取";
+          }
+        );
+      } else {
+        document.getElementById("weather").textContent = "瀏覽器不支援定位功能";
+      }
+    }
+
+    initWeather();
+  </script>
+</body>
+</html>
