@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>下班倒數計時器 + 天氣</title>
+  <style>
+    body {
+      font-family: "Microsoft JhengHei", sans-serif;
+      background: linear-gradient(to right, #4facfe, #00f2fe);
+      color: #fff;
+      text-align: center;
+      padding-top: 50px;
+    }
+    h1 {
+      font-size: 3em;
+      margin-bottom: 20px;
+    }
+    #countdown {
+      font-size: 2.5em;
+      font-weight: bold;
+      margin-top: 20px;
+    }
+    .input-area {
+      margin-top: 20px;
+    }
+    input[type="time"] {
+      font-size: 1.2em;
+      padding: 5px 10px;
+      border-radius: 5px;
+      border: none;
+    }
+    button {
+      font-size: 1.2em;
+      padding: 5px 15px;
+      margin-left: 10px;
+      border-radius: 5px;
+      border: none;
+      background-color: #ff9800;
+      color: #fff;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #e68900;
+    }
+    #weather-box {
+      margin-top: 40px;
+      padding: 20px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 10px;
+      display: inline-block;
+    }
+    #weather-box h2 {
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>下班倒數計時器</h1>
+
+  <div class="input-area">
+    <label for="offWorkTime">設定下班時間：</label>
+    <input type="time" id="offWorkTime" value="18:00">
+    <button onclick="setOffWorkTime()">更新</button>
+  </div>
+
+  <div id="countdown">計算中...</div>
+
+  <!-- 天氣框 -->
+  <div id="weather-box">
+    <h2>目前天氣</h2>
+    <div id="weather">載入中...</div>
+  </div>
+
+  <script>
+    let offWorkHour = 18;
+    let offWorkMinute = 0;
+
+    function setOffWorkTime() {
+      const timeInput = document.getElementById("offWorkTime").value;
+      if (timeInput) {
+        const [hour, minute] = timeInput.split(":").map(Number);
+        offWorkHour = hour;
+        offWorkMinute = minute;
+      }
+    }
+
+    function updateCountdown() {
+      const now = new Date();
+      const offWork = new Date();
+      offWork.setHours(offWorkHour, offWorkMinute, 0, 0);
+
+      if (now > offWork) {
+        document.getElementById("countdown").textContent = "已下班 🎉";
+        return;
+      }
+
+      const diff = offWork - now;
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      document.getElementById("countdown").textContent =
+        `${hours} 小時 ${minutes} 分鐘 ${seconds} 秒`;
+    }
+
+    setInterval(updateCountdown, 1000);
+    updateCountdown();
+
+    // 天氣 API (OpenWeatherMap)
+    const apiKey = "b58b4b5a6c4b8680563e249d2d74d344"; // ← 換成你自己的 API key
+
+    function fetchWeather(lat, lon) {
+      fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&lang=zh_tw&units=metric`)
+        .then(response => response.json())
+        .then(data => {
+          const weatherDesc = data
