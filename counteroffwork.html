@@ -169,6 +169,79 @@
     }
 
     initWeather();
+  
+
+    
+  
+  
+  
+  
+  
   </script>
+
+   <!-- 新聞框 -->
+    <div id="news-box">
+  <h2>台灣十大新聞</h2>
+  <label for="sourceSelect">選擇新聞來源：</label>
+  <select id="sourceSelect" onchange="fetchNews()">
+    <option value="yahoo">Yahoo 新聞</option>
+    <option value="ctee">工商時報</option>
+  </select>
+  <ul id="news-list">
+    <li>載入中...</li>
+  </ul>
+</div>
+<script>
+  async function fetchNews() {
+    const source = document.getElementById("sourceSelect").value;
+    let rssUrl = "";
+
+    if (source === "yahoo") {
+      rssUrl = "https://tw.news.yahoo.com/rss";
+    } else if (source === "ctee") {
+      rssUrl = "https://www.ctee.com.tw/rss"; // 工商時報 RSS
+    }
+
+    try {
+      const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(rssUrl)}`);
+      const data = await response.json();
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(data.contents, "text/xml");
+      const items = xml.querySelectorAll("item");
+
+      const newsList = document.getElementById("news-list");
+      newsList.innerHTML = ""; // 清空舊內容
+
+      items.forEach((item, index) => {
+        if (index < 10) {
+          const title = item.querySelector("title").textContent;
+          const link = item.querySelector("link").textContent;
+
+          const li = document.createElement("li");
+          const a = document.createElement("a");
+          a.href = link;
+          a.textContent = title;
+          a.target = "_blank"; // 新分頁開啟
+          li.appendChild(a);
+          newsList.appendChild(li);
+        }
+      });
+    } catch (error) {
+      document.getElementById("news-list").innerHTML = "<li>無法取得新聞資料</li>";
+    }
+  }
+
+  // 頁面載入時抓取一次
+  fetchNews();
+  // 每 30 分鐘更新一次
+  setInterval(fetchNews, 1800000);
+</script>
+  
+
+
+
+
+
+
 </body>
 </html>
