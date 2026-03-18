@@ -44,7 +44,7 @@
   <!-- 下班時間設定 -->
   <div class="input-area">
     <label for="offWorkTime">設定下班時間：</label>
-    <input type="time" id="offWorkTime" value="18:00">
+    <input type="time" id="offWorkTime" value="17:30">
     <button onclick="setOffWorkTime()">更新</button>
   </div>
 
@@ -72,8 +72,8 @@
 
   <script>
     // 下班倒數計時
-    let offWorkHour = 18;
-    let offWorkMinute = 0;
+    let offWorkHour = 17;
+    let offWorkMinute = 30;
 
     function setOffWorkTime() {
       const timeInput = document.getElementById("offWorkTime").value;
